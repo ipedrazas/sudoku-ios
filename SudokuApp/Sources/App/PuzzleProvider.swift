@@ -32,9 +32,9 @@ final class PuzzleProvider {
     func warmUp() {
         refillTask?.cancel()
         refillTask = Task(priority: .utility) {
-            await pool.restore()
+            _ = await pool.restore()
             await pool.refill()
-            try? await pool.save()
+            _ = try? await pool.save()
         }
     }
 
@@ -43,7 +43,7 @@ final class PuzzleProvider {
     func suspend() async {
         refillTask?.cancel()
         refillTask = nil
-        try? await pool.save()
+        _ = try? await pool.save()
     }
 
     /// A puzzle of the requested difficulty.
