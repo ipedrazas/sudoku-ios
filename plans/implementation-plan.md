@@ -32,7 +32,7 @@ Four deltas, all driven by new information:
 | Tool | State |
 |---|---|
 | Swift | 6.3.3 (`swiftlang-6.3.3.1.3`), target `arm64-apple-macosx26.0` |
-| `xcodebuild` | **Missing.** `xcode-select -p` → `/Library/Developer/CommandLineTools`. Full Xcode is required for the iOS SDK, simulators, WidgetKit and archiving. |
+| Xcode | **26.6 (17F113), installed and selected.** Phase 3 is unblocked. |
 | XcodeGen | `/opt/homebrew/bin/xcodegen` ✓ |
 | SwiftLint | `/opt/homebrew/bin/swiftlint` ✓ |
 | swift-format | `/opt/homebrew/bin/swift-format` ✓ |
@@ -41,11 +41,22 @@ Four deltas, all driven by new information:
 
 **Consequence, and the reason the architecture is shaped this way:** Phases 0–2
 — the entire game engine, generator, rater, hint engine and their tests — build
-and run under plain `swift test` on the command line. Install full Xcode before
-Phase 3; nothing before then is blocked.
+and run under plain `swift test` on the command line. That mattered: the whole
+engine was written and verified before Xcode existed on this machine.
 
-**Three CLT-only quirks, all resolved in `Taskfile.yml`** so nobody has to
-rediscover them:
+**Two prerequisites, not one.** Installing Xcode is necessary but not
+sufficient, and conflating them broke `task test`: the app tasks were guarded on
+Xcode alone, so the moment it appeared they started running and XcodeGen
+rejected a spec whose source directories do not exist yet.
+`scripts/skip-app-tasks.sh` is the single guard — XcodeGen present, Xcode
+usable, *and* `SudokuApp/Sources` non-empty — used by every app task's
+`status:`. It lives in a script because Task parses `status:` with its own
+shell, which does not evaluate a `! a || ! b` chain the way bash does; the
+inline version reported "not up to date" and ran anyway.
+
+**Three CLT-only quirks, resolved in `Taskfile.yml`.** They no longer bite on
+this machine, but the Taskfile computes them so a contributor with only Command
+Line Tools still gets a working `task test:kit`:
 
 - SwiftPM sandboxes manifest evaluation with `sandbox-exec`, which cannot nest
   inside an outer sandbox. `--disable-sandbox` fixes it and is safe: this package

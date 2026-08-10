@@ -27,6 +27,10 @@ vars:
   IPAD_DEST: "platform=iOS Simulator,name=iPad Pro 11-inch (M4)"
   # The web repo's generator package, source of the cross-check fixture.
   WEB_REPO: "../sudoku-and-cake"
+  # App tasks need two things, not one: full Xcode *and* an app target that has
+  # sources. See scripts/skip-app-tasks.sh for why this is a script rather than
+  # an inline condition. A zero exit means "up to date", so the task is skipped.
+  SKIP_APP: ./scripts/skip-app-tasks.sh
 
 tasks:
   default:
@@ -60,10 +64,10 @@ tasks:
       - swift build {{.SWIFT_FLAGS}} -c release
 
   build:app:
-    desc: Build the iOS app (requires full Xcode)
+    desc: Build the iOS app (requires full Xcode and an app target)
     deps: [xcodegen]
     status:
-      - "! xcodebuild -version >/dev/null 2>&1"
+      - '{{.SKIP_APP}}' 
     cmds:
       - xcodebuild build -project {{.APP_DIR}}/{{.SCHEME}}.xcodeproj -scheme {{.SCHEME}} -destination '{{.IPHONE_DEST}}'
 
@@ -85,10 +89,10 @@ tasks:
       - ./scripts/coverage-gate.sh 90 "$(swift test {{.SWIFT_FLAGS}} --show-codecov-path | tail -1)"
 
   test:app:
-    desc: Run app tests on iPhone and iPad simulators (requires full Xcode)
+    desc: Run app tests on iPhone and iPad simulators (requires full Xcode and an app target)
     deps: [xcodegen]
     status:
-      - "! xcodebuild -version >/dev/null 2>&1"
+      - '{{.SKIP_APP}}' 
     cmds:
       - xcodebuild test -project {{.APP_DIR}}/{{.SCHEME}}.xcodeproj -scheme {{.SCHEME}} -destination '{{.IPHONE_DEST}}'
       - xcodebuild test -project {{.APP_DIR}}/{{.SCHEME}}.xcodeproj -scheme {{.SCHEME}} -destination '{{.IPAD_DEST}}'
@@ -123,12 +127,12 @@ tasks:
   xcodegen:
     desc: Regenerate the Xcode project from project.yml
     status:
-      - "! command -v xcodegen >/dev/null 2>&1"
+      - '{{.SKIP_APP}}'
     cmds:
       - xcodegen generate --spec {{.APP_DIR}}/project.yml --project {{.APP_DIR}}
 
   run:
-    desc: Build and run the app in the iPhone simulator (requires full Xcode)
+    desc: Build and run the app in the iPhone simulator (requires full Xcode and an app target)
     deps: [build:app]
     cmds:
       - ./scripts/run-simulator.sh "{{.IPHONE_DEST}}"
