@@ -978,25 +978,70 @@ elapsed time and hint count exactly.
   longer autosaves — deliberate, since the completion is already recorded and
   re-recording it would inflate every stat that counts games.
 
-**Not yet verified: the test suites have not been run.** `xcodebuild` cannot
-resolve SwiftPM dependencies inside the `nono` sandbox — Xcode's manifest
-evaluation calls `sandbox_apply`, which a nested sandbox refuses. Everything was
-instead type-checked directly against the iOS 18 simulator SDK under Swift 6
-strict concurrency (app sources, unit tests and UI tests), and `swiftlint
---strict` and `swift-format --strict` are clean. `task test:app` outside the
-sandbox is what closes this out.
+**One bug got through, and it is worth recording how.** The first CI run failed
+every UI test and never ran the unit tests at all — they are hosted in the app,
+and the app was crashing at launch with a bare `SIGTRAP`, no message on stderr
+and nothing in the system log. Cause: `SwiftDataRepository` stored only
+`container.mainContext`, and **a `ModelContext` does not keep its
+`ModelContainer` alive**. The container was a local in the function that built
+the repository, so it was released on return and the next fetch trapped. It does
+not reproduce while the container happens to stay in scope, which is exactly
+what a naive check does. `PersistenceTests.repositoryRetainsItsContainer` builds
+the repository inside a function that returns nothing else, which is the shape
+that fails.
+
+**Verification, given that `xcodebuild` cannot run inside the `nono` sandbox**
+(Xcode's SwiftPM manifest evaluation calls `sandbox_apply`, which a nested
+sandbox refuses — no `--allow` fixes it): everything type-checks against the iOS
+18 simulator SDK under Swift 6 strict concurrency, `swiftlint --strict` and
+`swift-format --strict` are clean, and the app is hand-built with `swiftc`,
+installed with `simctl` and launched to confirm it reaches the home screen. The
+persistence layer has no UIKit in it, so it also builds and **runs** for macOS,
+where the fix was confirmed both ways: without it the same code exits 133
+(SIGTRAP). `task test:app` outside the sandbox is still what runs the suites as
+written.
 
 ### Phase 5 — Daily and calendar · 2 days
 
-| ID | Task |
-|---|---|
-| P5-1 | Daily screen; lazy generation cached in SwiftData by `dateKey` |
-| P5-2 | Calendar month grid: unplayed / in-progress / completed, past days playable |
-| P5-3 | Streak computation (`Streak.swift`) surfaced in the UI |
-| P5-4 | Opt-in streak notification with hour picker |
+| ID | Task | State |
+|---|---|---|
+| P5-1 | Daily screen; lazy generation cached in SwiftData by `dateKey` | done |
+| P5-2 | Calendar month grid: unplayed / in-progress / completed, past days playable | done |
+| P5-3 | Streak computation (`Streak.swift`) surfaced in the UI | done |
+| P5-4 | Opt-in streak notification with hour picker | done |
 
 *Done when:* two simulators on the same date produce the same daily, and any past
 date is playable with no stored history.
+
+**The daily inverts Phase 4's write rule, on purpose.** A generated game stores
+nothing until the player moves; a daily stores its `PuzzleRecord` the moment it
+is opened. For a daily the record *is* a cache keyed by date, and it cannot
+orphan — a date key is itself a reason to keep a puzzle. Determinism means the
+cache is an optimisation rather than the source of truth: a store that has never
+seen the 3rd of March produces the same grid as one that has, which is what
+`DailyTests.sameDateSamePuzzleAcrossStores` pins down.
+
+**Navigation became a real stack.** The game is now a route rather than a
+replacement for the root, so finishing a daily returns to the calendar it was
+started from. The back button and the back swipe are caught by observing the
+path — nothing else tells the app a session has been left, and a session left
+attached keeps autosaving from behind whatever replaced it.
+
+**The reminder has one genuinely hard bit, and it is not the notification.** The
+hour is local; the day it protects is UTC. In Newfoundland (UTC−3:30) the 10th
+of August begins at 8:30 pm on the 9th, so a 7 pm reminder "for the 10th" would
+fire while the app is still showing the 9th's puzzle. Fire times are therefore
+clamped inside the UTC day they protect, and
+`fireTimesStayInsideTheirDay` checks that across eight time zones, four dates
+either side of two DST seams, and three hours.
+
+**Verified by running, not only by type-checking.** `DailyModel`, `GameLibrary`
+and `StreakReminderPlan` have no UIKit in them, so they build and run for macOS:
+20 assertions covering determinism across independent stores, caching, resume,
+completion, streak, the month grid and the time-zone arithmetic all pass against
+the real sources. The app itself was hand-built and launched in a simulator to
+confirm the new navigation reaches the home screen. What remains for CI is the
+SwiftUI layer and the XCUITest flows.
 
 ### Phase 6 — Stats and achievements · 2–3 days
 

@@ -82,6 +82,26 @@ final class SmokeTests: XCTestCase {
         )
     }
 
+    /// The daily, end to end: it is generated on demand, so this is also the
+    /// only check that the push into a freshly generated puzzle works.
+    @MainActor
+    func testPlayingTheDaily() {
+        let app = launchApp()
+
+        let daily = app.buttons["home.daily"]
+        XCTAssertTrue(daily.waitForExistence(timeout: 30), "the home screen should offer the daily")
+        daily.tap()
+
+        let play = app.buttons["daily.play"]
+        XCTAssertTrue(play.waitForExistence(timeout: 10), "the daily screen should offer a game")
+        play.tap()
+
+        XCTAssertTrue(
+            app.buttons["cell.0"].waitForExistence(timeout: 30),
+            "the daily should generate and render"
+        )
+    }
+
     /// Phase 4's acceptance criterion, on a real device store: play, quit the
     /// app outright, come back, and find the game where it was left.
     ///

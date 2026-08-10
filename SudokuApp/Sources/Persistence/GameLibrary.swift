@@ -62,6 +62,50 @@ final class GameLibrary {
         return session
     }
 
+    /// The daily for a date: generated if this is the first time, resumed if it
+    /// has been started, replayable if it has been finished.
+    ///
+    /// Unlike a generated game, the puzzle record is written **immediately**.
+    /// That looks like a contradiction of the "nothing is written until the
+    /// player does something" rule and is the opposite: for a daily the record
+    /// *is* a cache keyed by date, and the point of the cache is that opening
+    /// the 3rd of March twice costs one generation. It cannot orphan either —
+    /// a date key is a reason to keep a puzzle.
+    ///
+    /// Generation is deterministic, so a store that has never seen this date
+    /// produces the same grid as one that has.
+    func daily(for date: Date, showsConflicts: Bool = true) async -> GameSession {
+        let dateKey = DailyPuzzle.dateKey(for: date)
+
+        let puzzle: StoredPuzzle
+        if let cached = try? repository.puzzle(dateKey: dateKey) {
+            puzzle = cached
+        } else {
+            // Carving is solid CPU work — a medium puzzle is single-digit
+            // milliseconds on this machine but several times that on the oldest
+            // device worth supporting, and none of it belongs on the main actor.
+            let generated = await Task.detached(priority: .userInitiated) {
+                DailyPuzzle.generate(for: date)
+            }.value
+
+            puzzle = StoredPuzzle(generated: generated, source: .daily, dateKey: dateKey)
+            do {
+                try repository.save(puzzle: puzzle)
+            } catch {
+                lastError = error
+            }
+        }
+
+        let session = GameSession(
+            id: puzzle.id,
+            puzzle: puzzle.generated,
+            restoring: try? repository.savedGame(puzzleID: puzzle.id),
+            showsConflicts: showsConflicts
+        )
+        track(session, puzzle: puzzle)
+        return session
+    }
+
     /// A session picked up exactly where it was left.
     func resume(_ summary: SavedGameSummary, showsConflicts: Bool = true) -> GameSession {
         let session = GameSession(

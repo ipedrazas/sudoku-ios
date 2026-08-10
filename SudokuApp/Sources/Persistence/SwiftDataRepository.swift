@@ -64,6 +64,12 @@ final class SwiftDataRepository: GameRepository {
             .snapshot
     }
 
+    func dailyPuzzles() throws -> [StoredPuzzle] {
+        try context.fetch(FetchDescriptor<PuzzleRecord>())
+            .filter { $0.dateKey != nil }
+            .compactMap(\.snapshot)
+    }
+
     // MARK: - Games in progress
 
     func save(game state: SavedGameState) throws {

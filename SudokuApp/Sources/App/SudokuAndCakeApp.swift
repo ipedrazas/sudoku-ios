@@ -4,14 +4,20 @@ import SwiftUI
 struct SudokuAndCakeApp: App {
     @Environment(\.scenePhase) private var scenePhase
     @State private var provider = PuzzleProvider()
-    @State private var library = GameLibrary(repository: Self.makeRepository())
+    @State private var library = GameLibrary(repository: Self.repository)
+    @State private var daily = DailyModel(repository: Self.repository)
+
+    /// One store, shared. The library writes to it and the daily model reads
+    /// from it; two containers over the same file would be two answers to every
+    /// question.
+    @MainActor private static let repository: any GameRepository = makeRepository()
 
     var body: some Scene {
         // WindowGroup rather than a single window: on iPad this gives multiple
         // puzzles side by side for free, which only stays free if session state
         // is never a global singleton.
         WindowGroup {
-            RootView(provider: provider, library: library)
+            RootView(provider: provider, library: library, daily: daily)
         }
         .onChange(of: scenePhase) { _, phase in
             guard phase != .active else { return }
