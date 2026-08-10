@@ -50,5 +50,6 @@ struct NumberPad: View {
         // erasing a wrong one — but it should not invite a tap.
         .opacity(remaining == 0 ? 0.4 : 1)
         .accessibilityLabel(remaining == 0 ? "\(digit), all placed" : "\(digit), \(remaining) remaining")
+        .accessibilityIdentifier("digit.\(digit)")
     }
 }

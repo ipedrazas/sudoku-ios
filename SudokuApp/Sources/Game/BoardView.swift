@@ -62,6 +62,7 @@ struct BoardView: View {
         }
         .buttonStyle(.plain)
         .accessibilityLabel(label(cell: cell, value: value, isGiven: isGiven))
+        .accessibilityIdentifier("cell.\(cell.index)")
         .accessibilityAddTraits(isSelected ? [.isSelected] : [])
     }
 

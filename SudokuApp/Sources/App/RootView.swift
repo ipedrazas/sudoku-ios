@@ -48,6 +48,7 @@ struct RootView: View {
                         .padding(.vertical, 4)
                     }
                     .buttonStyle(.bordered)
+                    .accessibilityIdentifier("difficulty.\(difficulty.rawValue)")
                 }
             }
             .frame(maxWidth: 420)

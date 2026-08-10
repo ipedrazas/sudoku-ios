@@ -6,6 +6,13 @@ import XCTest
 /// cannot: that the app actually launches and that a tap reaches a real board.
 /// Everything about *what* the board does is tested headlessly in
 /// `GameSessionTests`.
+///
+/// Elements are addressed by accessibility **identifier**, never by label.
+/// Labels are prose for VoiceOver and belong to the design; an earlier version
+/// matched `buttons["Easy"]` and found nothing, because SwiftUI composes a
+/// button's label from every `Text` inside it — that button reads "Easy,
+/// scanning". Identifiers keep the tests from breaking every time the copy
+/// changes.
 final class SmokeTests: XCTestCase {
 
     // XCUIApplication is main-actor isolated under Swift 6 strict concurrency,
@@ -22,7 +29,7 @@ final class SmokeTests: XCTestCase {
         app.launch()
 
         XCTAssertTrue(
-            app.buttons["Easy"].waitForExistence(timeout: 10),
+            app.buttons["difficulty.easy"].waitForExistence(timeout: 30),
             "the app should launch to a difficulty picker"
         )
     }
@@ -34,29 +41,36 @@ final class SmokeTests: XCTestCase {
         let app = XCUIApplication()
         app.launch()
 
-        XCTAssertTrue(app.buttons["Easy"].waitForExistence(timeout: 10))
-        app.buttons["Easy"].tap()
+        let easy = app.buttons["difficulty.easy"]
+        XCTAssertTrue(easy.waitForExistence(timeout: 30), "the difficulty picker should appear")
+        easy.tap()
 
-        // Cells are labelled "row R, column C, …" for VoiceOver, which also
-        // makes them addressable here without test-only identifiers.
+        // Wait for the board, then find a cell the player is allowed to fill.
+        // Emptiness comes from the label because that is genuinely what is being
+        // asked; which cell it is comes from the identifier.
+        XCTAssertTrue(
+            app.buttons["cell.0"].waitForExistence(timeout: 30),
+            "the board should render after choosing a difficulty"
+        )
+
         let emptyCell = app.buttons.matching(
-            NSPredicate(format: "label ENDSWITH %@", "empty")
+            NSPredicate(format: "identifier BEGINSWITH %@ AND label ENDSWITH %@", "cell.", "empty")
         ).firstMatch
-        XCTAssertTrue(emptyCell.waitForExistence(timeout: 10), "the board should render empty cells")
+        XCTAssertTrue(emptyCell.exists, "a generated puzzle should have empty cells")
 
-        let label = emptyCell.label
+        let identifier = emptyCell.identifier
         emptyCell.tap()
 
-        let five = app.buttons.matching(
-            NSPredicate(format: "label BEGINSWITH %@", "5,")
-        ).firstMatch
-        XCTAssertTrue(five.waitForExistence(timeout: 5), "the number pad should be on screen")
+        let five = app.buttons["digit.5"]
+        XCTAssertTrue(five.waitForExistence(timeout: 10), "the number pad should be on screen")
         five.tap()
 
-        // The cell that read "…empty" should now report its value instead.
+        // Same cell, addressed by identifier, should no longer read as empty.
+        let filled = app.buttons[identifier]
+        XCTAssertTrue(filled.waitForExistence(timeout: 10))
         XCTAssertFalse(
-            app.buttons[label].exists,
-            "the tapped cell should no longer be empty"
+            filled.label.hasSuffix("empty"),
+            "the tapped cell should have taken the digit, but reads '\(filled.label)'"
         )
     }
 }
