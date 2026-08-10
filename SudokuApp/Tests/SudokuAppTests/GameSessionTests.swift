@@ -537,6 +537,121 @@ struct GameSessionTests {
         #expect(session.formattedTime == "1:05")
     }
 
+    // MARK: - Inactivity
+
+    @Test("the offer to pause arrives after the threshold")
+    func idlePrompt() {
+        let session = session()
+        session.inactivityMinutes = 5
+
+        session.tick(.seconds(299))
+        #expect(!session.isIdlePromptDue)
+
+        session.tick(.seconds(1))
+        #expect(session.isIdlePromptDue)
+    }
+
+    @Test("any move resets the idle clock")
+    func interactionResetsIdle() {
+        let session = session()
+        session.inactivityMinutes = 1
+
+        session.tick(.seconds(59))
+        session.select(firstEmptyCell(session))
+        session.tick(.seconds(30))
+
+        #expect(!session.isIdlePromptDue, "selecting a cell should count as being there")
+    }
+
+    @Test("placing a digit resets the idle clock")
+    func inputResetsIdle() {
+        let session = session()
+        session.inactivityMinutes = 1
+        session.select(firstEmptyCell(session))
+
+        session.tick(.seconds(59))
+        session.input(5)
+        session.tick(.seconds(30))
+
+        #expect(!session.isIdlePromptDue)
+    }
+
+    @Test("accepting the offer pauses the clock")
+    func acceptIdlePause() {
+        let session = session()
+        session.inactivityMinutes = 1
+        session.tick(.seconds(60))
+
+        session.acceptIdlePause()
+        #expect(session.isPaused)
+        #expect(!session.isIdlePromptDue)
+
+        session.tick(.seconds(600))
+        #expect(session.elapsedSeconds == 60, "a paused clock must not run on")
+    }
+
+    /// A prompt that reappears the instant it is dismissed is worse than none.
+    @Test("declining buys another full interval")
+    func declineIdlePause() {
+        let session = session()
+        session.inactivityMinutes = 1
+        session.tick(.seconds(60))
+
+        session.declineIdlePause()
+        #expect(!session.isIdlePromptDue)
+
+        session.tick(.seconds(59))
+        #expect(!session.isIdlePromptDue)
+        session.tick(.seconds(1))
+        #expect(session.isIdlePromptDue, "the offer should return after another full interval")
+    }
+
+    @Test("the offer never appears when it could not help")
+    func idlePromptSuppressed() {
+        let disabled = session()
+        disabled.inactivityMinutes = 0
+        disabled.tick(.seconds(3600))
+        #expect(!disabled.isIdlePromptDue, "0 minutes means never")
+
+        let paused = session()
+        paused.inactivityMinutes = 1
+        paused.pause()
+        paused.tick(.seconds(600))
+        #expect(!paused.isIdlePromptDue, "already paused")
+
+        let finished = session()
+        finished.inactivityMinutes = 1
+        solve(finished)
+        finished.tick(.seconds(600))
+        #expect(!finished.isIdlePromptDue, "already finished")
+    }
+
+    // MARK: - Winning
+
+    @Test("solving raises the win summary, which can be dismissed")
+    func winSummary() {
+        let session = session()
+        #expect(!session.showsWinSummary)
+
+        solve(session)
+        #expect(session.showsWinSummary)
+
+        session.dismissWinSummary()
+        #expect(!session.showsWinSummary, "dismissing should leave the finished board visible")
+        #expect(session.isSolved, "and the puzzle is still solved")
+    }
+
+    @Test("restart clears the win state")
+    func restartAfterWinning() {
+        let session = session()
+        solve(session)
+        session.restart()
+
+        #expect(!session.showsWinSummary)
+        #expect(session.finishedAt == nil)
+        #expect(!session.isSolved)
+    }
+
     // MARK: - Hints
 
     @Test("hints charge only the difference when a player escalates")

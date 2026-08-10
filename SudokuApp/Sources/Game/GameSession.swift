@@ -61,9 +61,21 @@ final class GameSession {
 
     private(set) var elapsed: Duration = .zero
     private(set) var isPaused = false
+
+    /// Minutes of inactivity before offering to pause. 0 disables the prompt.
+    ///
+    /// The web app offers 1, 3, 5 or 10 with 5 as the default
+    /// (`lib/settings.ts:34`). The point is that a puzzle left open while you
+    /// answer the door should not quietly ruin your best time.
+    var inactivityMinutes: Int = 5
+    /// How long since the player last did anything.
+    private(set) var idle: Duration = .zero
     private(set) var hintPoints = 0
     private(set) var hintsUsed = 0
     private(set) var finishedAt: Date?
+    /// Whether the win card is on screen. Separate from `finishedAt` so the
+    /// player can dismiss it and admire the completed grid.
+    private(set) var showsWinSummary = false
 
     /// Units that just became correctly complete, for the celebration.
     private(set) var celebratingUnits: Set<UnitRef> = []
@@ -111,6 +123,7 @@ final class GameSession {
     /// other way to dismiss a selection. Any selection also cancels blind mode,
     /// since the mask is anchored to the previously selected cell.
     func select(_ cell: CellRef) {
+        noteInteraction()
         isBlindMode = false
 
         if inputMode == .digitFirst, let digit = armedDigit {
@@ -127,6 +140,7 @@ final class GameSession {
     /// Arrow-key navigation for iPad (§8.3), and the basis of the VoiceOver
     /// rotor in Phase 9. Starts from the top-left when nothing is selected.
     func moveSelection(rowDelta: Int, colDelta: Int) {
+        noteInteraction()
         guard let current = selection else {
             selection = CellRef(index: 0)
             return
@@ -248,6 +262,7 @@ final class GameSession {
     /// Every mutation goes through here, which is what keeps undo honest: there
     /// is no path that changes the board without pushing history.
     private func mutate(_ change: () -> Void) {
+        noteInteraction()
         undoStack.append(Snapshot(board: board, pencil: pencil))
         if undoStack.count > Self.historyLimit { undoStack.removeFirst() }
         // Any new move invalidates the redo branch (`useGameBoard.ts:194`).
@@ -286,7 +301,9 @@ final class GameSession {
         hintPoints = 0
         hintsUsed = 0
         finishedAt = nil
+        showsWinSummary = false
         elapsed = .zero
+        idle = .zero
         undoStack.removeAll()
         redoStack.removeAll()
         completedUnits = nil
@@ -326,11 +343,46 @@ final class GameSession {
     func tick(_ interval: Duration = .seconds(1)) {
         guard !isPaused, finishedAt == nil else { return }
         elapsed += interval
+        idle += interval
+    }
+
+    /// Records that the player did something, resetting the idle clock.
+    ///
+    /// Called from every intent rather than from the views, so there is no way
+    /// to add an interaction that forgets to count as one.
+    func noteInteraction() {
+        idle = .zero
+    }
+
+    /// True once the player has been idle past the threshold, and pausing would
+    /// actually help — not while already paused, and not after finishing.
+    var isIdlePromptDue: Bool {
+        guard inactivityMinutes > 0, !isPaused, finishedAt == nil else { return false }
+        return idle >= .seconds(inactivityMinutes * 60)
+    }
+
+    /// Accepts the offer: pause, and stop asking.
+    func acceptIdlePause() {
+        isPaused = true
+        idle = .zero
+    }
+
+    /// Declines it. The clock keeps running and the offer returns after another
+    /// full interval rather than immediately — a prompt that reappears at once
+    /// is worse than none.
+    func declineIdlePause() {
+        idle = .zero
     }
 
     func pause() { isPaused = true }
-    func resume() { isPaused = false }
-    func togglePause() { isPaused.toggle() }
+    func resume() {
+        isPaused = false
+        idle = .zero
+    }
+    func togglePause() {
+        isPaused.toggle()
+        idle = .zero
+    }
 
     var elapsedSeconds: Int { Int(elapsed.components.seconds) }
 
@@ -428,6 +480,7 @@ final class GameSession {
         if isSolved, finishedAt == nil {
             finishedAt = Date()
             isPaused = true
+            showsWinSummary = true
         }
     }
 
@@ -448,6 +501,10 @@ final class GameSession {
         defer { completedUnits = complete }
         guard let previous = completedUnits else { return }
         celebratingUnits = complete.subtracting(previous)
+    }
+
+    func dismissWinSummary() {
+        showsWinSummary = false
     }
 
     /// Ends the celebration. Called by the view once its animation has run.

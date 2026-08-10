@@ -41,6 +41,21 @@ struct GameScreen: View {
         .sheet(item: $hint) { hint in
             HintSheet(hint: hint, level: $hintLevel, session: session) { self.hint = nil }
         }
+        .overlay {
+            if session.showsWinSummary {
+                WinCelebration(session: session, onNewGame: onNewGame)
+                    .transition(.opacity)
+            }
+        }
+        .animation(reduceMotion ? nil : .snappy, value: session.showsWinSummary)
+        // The offer, not an interruption: the clock is still running behind it,
+        // and declining costs nothing.
+        .alert("Still there?", isPresented: idlePrompt) {
+            Button("Pause") { session.acceptIdlePause() }
+            Button("Keep going", role: .cancel) { session.declineIdlePause() }
+        } message: {
+            Text("The clock is still running. Pause it so a break doesn't count against your time?")
+        }
     }
 
     // MARK: - Layouts
@@ -55,7 +70,6 @@ struct GameScreen: View {
             header
             BoardView(session: session)
             Spacer(minLength: 0)
-            if session.isSolved { solvedBanner }
             ControlBar(session: session, onHint: requestHint)
             NumberPad(session: session, layout: .row)
         }
@@ -77,7 +91,6 @@ struct GameScreen: View {
             // edge, a screen away from the board it acts on.
             VStack(spacing: 24) {
                 header
-                if session.isSolved { solvedBanner }
                 ControlBar(session: session, onHint: requestHint)
                 NumberPad(session: session, layout: .grid)
             }
@@ -114,14 +127,6 @@ struct GameScreen: View {
         }
     }
 
-    private var solvedBanner: some View {
-        Label("Solved in \(session.formattedTime)", systemImage: "checkmark.seal.fill")
-            .font(.headline)
-            .foregroundStyle(.green)
-            .transition(.scale.combined(with: .opacity))
-            .accessibilityIdentifier("banner.solved")
-    }
-
     @ToolbarContentBuilder
     private var toolbarContent: some ToolbarContent {
         ToolbarItem(placement: .topBarLeading) {
@@ -141,12 +146,25 @@ struct GameScreen: View {
                 Picker("Input", selection: $session.inputMode) {
                     ForEach(InputMode.allCases, id: \.self) { Text($0.name).tag($0) }
                 }
+                Picker("Offer to pause after", selection: $session.inactivityMinutes) {
+                    Text("Never").tag(0)
+                    ForEach([1, 3, 5, 10], id: \.self) { Text("^[\($0) minute](inflect: true)").tag($0) }
+                }
             } label: {
                 Image(systemName: "ellipsis.circle")
             }
             .accessibilityIdentifier("control.menu")
             .accessibilityLabel("More")
         }
+    }
+
+    /// Bound rather than stored: the session decides when the offer is due, so
+    /// there is no second copy of that state to drift.
+    private var idlePrompt: Binding<Bool> {
+        Binding(
+            get: { session.isIdlePromptDue },
+            set: { if !$0 { session.declineIdlePause() } }
+        )
     }
 
     // MARK: - Hints

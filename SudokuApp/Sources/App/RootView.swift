@@ -90,7 +90,29 @@ struct RootView: View {
     private func start(_ difficulty: Difficulty) {
         Task {
             let puzzle = await provider.newGame(difficulty)
-            session = GameSession(puzzle: puzzle)
+            let session = GameSession(puzzle: puzzle, showsConflicts: true)
+            Self.prefill(session)
+            self.session = session
         }
+    }
+
+    /// `-prefill N` fills all but N cells from the solution.
+    ///
+    /// The companion to `-startGame`, and for the same reason: the states worth
+    /// looking at hardest — a nearly finished grid, the win card — are the most
+    /// tedious to reach by tapping. Screenshots and UI tests use it; nothing
+    /// else does.
+    private static func prefill(_ session: GameSession) {
+        let arguments = ProcessInfo.processInfo.arguments
+        guard let index = arguments.firstIndex(of: "-prefill"), index + 1 < arguments.count,
+            let remaining = Int(arguments[index + 1])
+        else { return }
+
+        let empties = session.board.emptyCells
+        for cell in empties.dropLast(max(0, remaining)) {
+            session.select(cell)
+            session.input(session.puzzle.solution[cell])
+        }
+        session.selection = nil
     }
 }
