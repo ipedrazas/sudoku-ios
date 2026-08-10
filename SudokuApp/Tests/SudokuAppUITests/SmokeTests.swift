@@ -119,6 +119,27 @@ final class SmokeTests: XCTestCase {
         )
     }
 
+    /// The stats screen with nothing to show, which is the state most likely to
+    /// crash: empty charts, empty aggregates, and a grid of achievements nobody
+    /// has earned.
+    @MainActor
+    func testStatsScreenOpensWithNoHistory() {
+        let app = launchApp()
+
+        let stats = app.buttons["home.stats"]
+        XCTAssertTrue(stats.waitForExistence(timeout: 30), "the home screen should offer stats")
+        stats.tap()
+
+        // Matched across element types: a container's identifier surfaces as
+        // `other` or `staticText` depending on how SwiftUI collapses it, and
+        // pinning the type here would be pinning an implementation detail.
+        let empty = app.descendants(matching: .any).matching(identifier: "stats.empty").firstMatch
+        XCTAssertTrue(empty.waitForExistence(timeout: 15), "a store with no history should say so")
+
+        let achievements = app.descendants(matching: .any).matching(identifier: "stats.achievements").firstMatch
+        XCTAssertTrue(achievements.exists, "achievements are listed even when none are earned")
+    }
+
     /// Phase 4's acceptance criterion, on a real device store: play, quit the
     /// app outright, come back, and find the game where it was left.
     ///

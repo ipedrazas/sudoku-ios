@@ -10,6 +10,7 @@ struct RootView: View {
     let provider: PuzzleProvider
     let library: GameLibrary
     let daily: DailyModel
+    let stats: StatsModel
 
     /// Where the stack can go. The game is a destination like any other, so
     /// finishing a daily returns to the calendar it was started from rather than
@@ -17,11 +18,15 @@ struct RootView: View {
     enum Route: Hashable {
         case daily
         case calendar
+        case stats
         case game
     }
 
     @State private var path: [Route] = []
     @State private var session: GameSession?
+    /// Achievements unlocked by the solve just finished, so the grid can mark
+    /// them when the player goes looking. Cleared when a new game starts.
+    @State private var recentlyUnlocked: Set<String> = []
 
     var body: some View {
         NavigationStack(path: $path) {
@@ -32,6 +37,7 @@ struct RootView: View {
             provider.warmUp()
             library.refresh()
             daily.refresh()
+            stats.refresh()
             if let difficulty = Self.launchDifficulty { start(difficulty) }
         }
         // Covers the back button and the back swipe, which no callback of ours
@@ -49,6 +55,8 @@ struct RootView: View {
             DailyScreen(model: daily, onPlay: playDaily) { path.append(.calendar) }
         case .calendar:
             CalendarScreen(model: daily, onPlay: playDaily)
+        case .stats:
+            StatsScreen(model: stats, highlighting: recentlyUnlocked)
         case .game:
             if let session {
                 GameScreen(session: session) { endGame() }
@@ -84,6 +92,27 @@ struct RootView: View {
                 }
                 .buttonStyle(.plain)
                 .accessibilityIdentifier("home.daily")
+
+                Button {
+                    path.append(.stats)
+                } label: {
+                    LabeledContent {
+                        Image(systemName: "chevron.right")
+                            .font(.footnote.weight(.semibold))
+                            .foregroundStyle(.tertiary)
+                    } label: {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Stats")
+                                .font(.headline)
+                            Text(statsSubtitle)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                    .contentShape(.rect)
+                }
+                .buttonStyle(.plain)
+                .accessibilityIdentifier("home.stats")
             }
 
             if !library.savedGames.isEmpty {
@@ -139,6 +168,14 @@ struct RootView: View {
         return today.isInProgress ? "In progress" : "Not played yet"
     }
 
+    private var statsSubtitle: String {
+        let solved = stats.stats.totalFinished
+        guard solved > 0 else { return "Nothing solved yet" }
+        let unlocked = stats.unlockedCount
+        let puzzles = solved == 1 ? "1 puzzle" : "\(solved) puzzles"
+        return unlocked > 0 ? "\(puzzles) · \(unlocked) achievements" : puzzles
+    }
+
     /// Names the technique each rung actually requires. The difficulty ladder is
     /// defined by technique rather than clue count, so saying so is more honest
     /// than "medium" and teaches the vocabulary the hints will use.
@@ -173,6 +210,8 @@ struct RootView: View {
     }
 
     private func show(_ session: GameSession) {
+        // Last game's unlocks stop being news the moment a new one starts.
+        recentlyUnlocked = []
         self.session = session
         if path.last != .game { path.append(.game) }
     }
@@ -197,12 +236,17 @@ struct RootView: View {
     /// Idempotent, because it is called both explicitly and from the path
     /// observer that catches the back button.
     private func releaseSession() {
-        guard session != nil else { return }
+        guard let session else { return }
+        // Carried out of the session before it goes, so the achievements grid
+        // can mark what this solve earned whenever the player looks.
+        recentlyUnlocked = Set(session.unlockedAchievements.map(\.key))
+
         library.detach()
-        session = nil
-        // The daily may have just been solved, and both this screen and the
-        // calendar behind it say so.
+        self.session = nil
+        // The game just ended, and every screen behind it says something about
+        // games that have ended.
         daily.refresh()
+        stats.refresh()
     }
 
     // MARK: - Launch arguments

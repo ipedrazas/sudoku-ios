@@ -1045,16 +1045,45 @@ SwiftUI layer and the XCUITest flows.
 
 ### Phase 6 — Stats and achievements · 2–3 days
 
-| ID | Task |
-|---|---|
-| P6-1 | `StatsAggregator` over `Completion` rows — every `StatsResponse` field |
-| P6-2 | Swift Charts: by difficulty, by day-of-week, by month, time distribution |
-| P6-3 | Per-difficulty avg/best, completion rate, current/best streak, recent list |
-| P6-4 | GitHub-style year contribution heatmap |
-| P6-5 | Achievements grid + unlock animation |
+| ID | Task | State |
+|---|---|---|
+| P6-1 | `StatsAggregator` over `Completion` rows — every `StatsResponse` field | done |
+| P6-2 | Swift Charts: by difficulty, by day-of-week, by month, time distribution | done |
+| P6-3 | Per-difficulty avg/best, completion rate, current/best streak, recent list | done |
+| P6-4 | GitHub-style year contribution heatmap | done |
+| P6-5 | Achievements grid + unlock animation | done |
 
 *Done when:* every field of the web `StatsResponse` has a rendered local
 equivalent.
+
+**One field could not be ported honestly, and is renamed rather than faked.**
+The web app's `completionRate` divided by every game ever started, which a
+server could count because it saw them all. Locally a game the player abandons
+leaves no trace at all — deliberately, since Phase 4 writes nothing until the
+first move. What *is* knowable is finished versus still open, so that is what the
+tile shows and what it is called ("Finished vs. open"). Borrowing the old name
+for a different denominator would have been the easy option and a lie.
+
+**Every bar chart is a single hue.** Bar length already encodes the count;
+colouring bars by their value spends the identity channel re-encoding what the
+reader can already see, and colouring them by category claims four differences
+that do not exist when there is one series. The heatmap is the only place colour
+carries magnitude — it has no length to carry it with — so it is the only
+sequential ramp, one hue light→dark, with empty days in neutral gray rather than
+the palest step. Dark mode gets its own steps rather than an opacity flip.
+
+**Three defects the tests could not have caught, found by screenshotting the
+built app.** Axis labels rendered in pale blue, because `.secondary` inside a
+chart is *hierarchical* and the hierarchy is the chart's foreground style — the
+text was wearing the series colour. Category labels sat inside the plot on top
+of the bars they named. And the first fix for that (padding the plot) moved the
+marks without moving the axis, so bars stopped growing from the zero tick and
+every length read high. Rendering and looking is a step, not a formality.
+
+**Verified by running**, as in Phase 5: `StatsModel` has no UIKit, so 32
+assertions over aggregation, ordering, the redefined rate and the heatmap grid
+run as a macOS binary against the real sources. The screens themselves were
+built and screenshotted in a simulator.
 
 ### Phase 7 — Hints, import, sharing, settings · 3–4 days
 

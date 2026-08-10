@@ -6,6 +6,7 @@ struct SudokuAndCakeApp: App {
     @State private var provider = PuzzleProvider()
     @State private var library = GameLibrary(repository: Self.repository)
     @State private var daily = DailyModel(repository: Self.repository)
+    @State private var stats = StatsModel(repository: Self.repository)
 
     /// One store, shared. The library writes to it and the daily model reads
     /// from it; two containers over the same file would be two answers to every
@@ -17,7 +18,7 @@ struct SudokuAndCakeApp: App {
         // puzzles side by side for free, which only stays free if session state
         // is never a global singleton.
         WindowGroup {
-            RootView(provider: provider, library: library, daily: daily)
+            RootView(provider: provider, library: library, daily: daily, stats: stats)
         }
         .onChange(of: scenePhase) { _, phase in
             guard phase != .active else { return }

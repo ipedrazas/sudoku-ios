@@ -603,7 +603,7 @@ private final class CountingRepository: GameRepository {
     func deleteSavedGame(puzzleID: UUID) throws { try backing.deleteSavedGame(puzzleID: puzzleID) }
     func record(completion: StoredCompletion) throws { try backing.record(completion: completion) }
     func completions() throws -> [StoredCompletion] { try backing.completions() }
-    func earnedAchievementKeys() throws -> Set<String> { try backing.earnedAchievementKeys() }
+    func achievementUnlocks() throws -> [String: Date] { try backing.achievementUnlocks() }
     func unlock(achievementKeys keys: [String], at date: Date) throws {
         try backing.unlock(achievementKeys: keys, at: date)
     }
