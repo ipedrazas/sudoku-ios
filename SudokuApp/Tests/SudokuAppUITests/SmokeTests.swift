@@ -109,7 +109,17 @@ final class SmokeTests: XCTestCase {
         // Backgrounding is what flushes the pending autosave, so it has to
         // happen before the process goes away — as it does when a player
         // swipes the app out of the switcher.
+        //
+        // Waiting for the state rather than assuming it: pressing home only
+        // *asks*, and on a loaded CI runner the app can still be foreground a
+        // second later. Terminating in that window kills it before the save,
+        // which failed this test once with a resume list that was empty for a
+        // reason that had nothing to do with persistence.
         XCUIDevice.shared.press(.home)
+        XCTAssertTrue(
+            app.wait(for: .runningBackground, timeout: 30),
+            "the app should reach the background, which is where the pending save is flushed"
+        )
         app.terminate()
 
         app.launchArguments = []
