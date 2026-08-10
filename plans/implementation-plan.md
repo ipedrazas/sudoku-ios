@@ -950,18 +950,41 @@ balloons.
 
 ### Phase 4 — Persistence · 2–3 days
 
-| ID | Task |
-|---|---|
-| P4-1 | SwiftData models (§6.2), CloudKit-shaped |
-| P4-2 | `GameRepository` protocol + SwiftData and in-memory implementations |
-| P4-3 | Debounced autosave (~1 s) + forced flush on `scenePhase` |
-| P4-4 | Resume-on-launch; saved-games list with swipe-to-delete |
-| P4-5 | Completion recording + achievement evaluation on solve |
-| P4-6 | Round-trip persistence tests |
-| P4-7 | **Freeze the schema** and record it in `plans/schema-v1.md` |
+| ID | Task | State |
+|---|---|---|
+| P4-1 | SwiftData models (§6.2), CloudKit-shaped | done |
+| P4-2 | `GameRepository` protocol + SwiftData and in-memory implementations | done |
+| P4-3 | Debounced autosave (~1 s) + forced flush on `scenePhase` | done |
+| P4-4 | Resume-on-launch; saved-games list with swipe-to-delete | done |
+| P4-5 | Completion recording + achievement evaluation on solve | done |
+| P4-6 | Round-trip persistence tests | done |
+| P4-7 | **Freeze the schema** and record it in `plans/schema-v1.md` | done — [`schema-v1.md`](./schema-v1.md) |
 
 *Done when:* force-quitting mid-game and relaunching restores board, pencil,
 elapsed time and hint count exactly.
+
+**Three decisions worth recording, because none of them is the obvious one:**
+
+- **Nothing is written until the player does something.** Tapping a difficulty
+  and leaving stores no row at all — the `PuzzleRecord` is written by the first
+  save, not at `start`. The alternative (write the puzzle up front, sweep the
+  orphans later) needs a sweep, and a sweep needs a rule for what is garbage.
+- **Resume is a tap, not a redirect.** The home screen offers games in progress
+  above the difficulty list; it does not drop the player back into the last
+  puzzle on launch. Restoring state and choosing what to open are different
+  questions, and only the first one is the app's to answer.
+- **A completed puzzle is history, and history is not saved.** The saved game is
+  deleted on the solve. Undoing after a win leaves a playable board that no
+  longer autosaves — deliberate, since the completion is already recorded and
+  re-recording it would inflate every stat that counts games.
+
+**Not yet verified: the test suites have not been run.** `xcodebuild` cannot
+resolve SwiftPM dependencies inside the `nono` sandbox — Xcode's manifest
+evaluation calls `sandbox_apply`, which a nested sandbox refuses. Everything was
+instead type-checked directly against the iOS 18 simulator SDK under Swift 6
+strict concurrency (app sources, unit tests and UI tests), and `swiftlint
+--strict` and `swift-format --strict` are clean. `task test:app` outside the
+sandbox is what closes this out.
 
 ### Phase 5 — Daily and calendar · 2 days
 
