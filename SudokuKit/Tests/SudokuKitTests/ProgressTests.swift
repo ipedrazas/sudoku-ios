@@ -100,11 +100,11 @@ struct AchievementsTests {
         #expect(Achievements.newlyEarned(context(streak: 30)).contains("streak_30"))
     }
 
-    /// Expert and Evil are harder than Hard, so they satisfy anything Hard does.
-    /// This keeps the web app's three-bucket achievement set meaningful across a
-    /// five-rung ladder without inventing keys a future sync would not recognise.
-    @Test("expert and evil count as hard", arguments: [Difficulty.hard, .expert, .evil])
-    func harderRungsCountAsHard(difficulty: Difficulty) {
+    /// Expert is harder than Hard, so it satisfies anything Hard does. This
+    /// keeps the web app's three-bucket achievement set meaningful across a
+    /// four-rung ladder without inventing keys a future sync would not recognise.
+    @Test("expert counts as hard", arguments: [Difficulty.hard, .expert])
+    func expertCountsAsHard(difficulty: Difficulty) {
         let earned = Achievements.newlyEarned(context(difficulty: difficulty, time: 100))
         #expect(earned.contains("first_hard_solve"))
         #expect(earned.contains("speed_hard_20m"))

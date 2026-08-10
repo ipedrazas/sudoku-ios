@@ -80,7 +80,6 @@ struct PerformanceTests {
         .medium: .milliseconds(600),
         .hard: .milliseconds(2500),
         .expert: .milliseconds(4000),
-        .evil: .milliseconds(6000),
     ]
 
     @Test(

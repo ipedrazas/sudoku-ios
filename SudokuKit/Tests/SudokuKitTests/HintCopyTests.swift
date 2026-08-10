@@ -249,8 +249,8 @@ struct ValueTypeTests {
     @Test("difficulty names are presentable")
     func difficultyNames() {
         #expect(Difficulty.easy.name == "Easy")
-        #expect(Difficulty.evil.name == "Evil")
-        #expect(Difficulty.allCases.count == 5)
+        #expect(Difficulty.expert.name == "Expert")
+        #expect(Difficulty.allCases.count == 4)
     }
 
     @Test("tier names are presentable")

@@ -4,7 +4,7 @@
 /// and `candidatesFor` (`backend/internal/generator/generator.go:45-309`).
 ///
 /// `countSolutions` runs once per removal attempt inside `carveToTier` — up to
-/// 81 removals per attempt, up to 120 attempts for Evil — so it is the hottest
+/// 81 removals per attempt, up to 80 attempts for Expert — so it is the hottest
 /// code in the package. It works entirely on stack-allocated scratch: no array
 /// copies, no ARC traffic, no allocator calls in the recursion.
 public enum Solver {

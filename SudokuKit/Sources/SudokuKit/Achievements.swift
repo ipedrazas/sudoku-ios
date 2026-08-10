@@ -22,7 +22,7 @@ public struct Achievement: Equatable, Sendable, Identifiable {
 ///
 /// **The 11 keys are frozen.** They match the web app's `user_achievements`
 /// table, so a future sync can reconcile the two without a migration. New rungs
-/// (Expert, Evil) map onto the existing "hard" achievements rather than
+/// (Expert) map onto the existing "hard" achievements rather than
 /// redefining them; genuinely new achievements get genuinely new keys.
 public enum Achievements {
     /// The canonical list, in display order.
@@ -101,8 +101,8 @@ public enum Achievements {
             earned.append(key)
         }
 
-        // Expert and Evil count as "hard" for continuity with the web app's
-        // three-rung achievement set.
+        // Expert counts as "hard" for continuity with the web app's three-rung
+        // achievement set.
         let bucket = achievementDifficulty(context.difficulty)
 
         check("first_easy_solve", bucket == .easy)
@@ -123,14 +123,13 @@ public enum Achievements {
         return earned
     }
 
-    /// Collapses the five-rung ladder onto the web app's three achievement
-    /// buckets. Expert and Evil are harder than Hard, so they satisfy anything
-    /// Hard satisfies.
+    /// Collapses the four-rung ladder onto the web app's three achievement
+    /// buckets. Expert is harder than Hard, so it satisfies anything Hard does.
     static func achievementDifficulty(_ difficulty: Difficulty) -> Difficulty {
         switch difficulty {
         case .easy: .easy
         case .medium: .medium
-        case .hard, .expert, .evil: .hard
+        case .hard, .expert: .hard
         }
     }
 }

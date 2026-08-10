@@ -178,23 +178,56 @@ struct GeneratorTests {
         #expect(inBand > samples / 2, "\(difficulty) landed in band only \(inBand)/\(samples) times")
     }
 
-    /// Measures the Expert/Evil separation flagged as a risk in the plan (P2-6).
-    /// Both share a technique ceiling and differ only in carve depth, so if their
-    /// clue counts converge the extra rung means nothing to a player.
-    @Test("Evil carves meaningfully deeper than Expert")
-    func evilIsDistinctFromExpert() {
-        func medianClues(_ difficulty: Difficulty) -> Int {
-            let counts = (UInt64(300)..<308).map { seed -> Int in
-                var rng = SeededRandom(seed: seed)
-                return Generator.generate(difficulty, using: &rng).clueCount
-            }
-            return counts.sorted()[counts.count / 2]
+    /// Guards the failure that cost us the "Evil" rung: two difficulties that
+    /// differ on paper but generate the same puzzles.
+    ///
+    /// Evil was specified as Expert with a lower clue floor. Because `minClues`
+    /// is a stop-carving floor that neither rung reached, they produced
+    /// identical output — the same median clue count *and* the same realised
+    /// tier. A rung has to be distinguishable by something a player can feel.
+    ///
+    /// Note this measures the tier puzzles actually come out at, not the spec's
+    /// ceiling. Hard and Expert share a ceiling of `.advanced`; what separates
+    /// them is that Expert *requires* an advanced technique while Hard merely
+    /// permits one, so Hard's puzzles mostly land on `.locked`. Comparing
+    /// ceilings would have called them identical and comparing clue counts alone
+    /// would have separated them by a single clue.
+    @Test("each rung is distinguishable from the next")
+    func rungsAreDistinct() {
+        struct Profile {
+            let medianClues: Int
+            let medianTier: Int
         }
 
-        let expert = medianClues(.expert)
-        let evil = medianClues(.evil)
+        func profile(_ difficulty: Difficulty) -> Profile {
+            let results = (UInt64(300)..<316).map { seed -> GeneratedPuzzle in
+                var rng = SeededRandom(seed: seed)
+                return Generator.generate(difficulty, using: &rng)
+            }
+            let clues = results.map(\.clueCount).sorted()
+            let tiers = results.map(\.tier.rawValue).sorted()
+            return Profile(medianClues: clues[clues.count / 2], medianTier: tiers[tiers.count / 2])
+        }
 
-        print("clue-count medians — expert: \(expert), evil: \(evil)")
-        #expect(evil <= expert, "Evil should never carry more clues than Expert")
+        let profiles = Difficulty.allCases.map { ($0, profile($0)) }
+        for (difficulty, summary) in profiles {
+            print("rung \(difficulty.rawValue): median clues \(summary.medianClues), median tier \(summary.medianTier)")
+        }
+
+        for (index, (difficulty, summary)) in profiles.enumerated().dropFirst() {
+            let (previousDifficulty, previous) = profiles[index - 1]
+            let harderTier = summary.medianTier > previous.medianTier
+            let noticeablyFewerClues = summary.medianClues <= previous.medianClues - 2
+
+            #expect(
+                harderTier || noticeablyFewerClues,
+                """
+                \(difficulty.rawValue) is indistinguishable from \(previousDifficulty.rawValue): \
+                median tier \(summary.medianTier) vs \(previous.medianTier), \
+                median clues \(summary.medianClues) vs \(previous.medianClues). \
+                A rung needs to differ by something a player can feel.
+                """
+            )
+        }
     }
 }

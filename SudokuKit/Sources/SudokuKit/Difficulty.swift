@@ -1,7 +1,19 @@
 /// The difficulty ladder.
 ///
-/// The web app ships three rungs (`generator.go:24-31`). The technique rater
-/// makes two more nearly free, and players expect five.
+/// The web app ships three rungs (`generator.go:24-31`); Expert is the fourth,
+/// and it is where the ladder stops.
+///
+/// A fifth rung ("Evil", carving to the 17-clue theoretical minimum) was
+/// specified and built, then measured and removed. It was indistinguishable
+/// from Expert — both landed on a median of 24 clues with the same tier and the
+/// same generation cost — because `minClues` is a stop-carving *floor* that
+/// neither rung ever reaches. Carving halts earlier, when no further removal
+/// keeps both a unique solution and a tier at or below `.advanced`, and the two
+/// rungs shared that ceiling. Two labels for one generator is worse than four
+/// honest rungs.
+///
+/// A genuine fifth rung needs a harder technique in the rater — an XY-wing or a
+/// swordfish as a real tier 5 — not a lower clue floor.
 ///
 /// Every rung caps `maxTier` at `.advanced`, so **no shipped puzzle ever
 /// requires guessing**. That is the differentiator worth protecting: "hard"
@@ -11,7 +23,6 @@ public enum Difficulty: String, CaseIterable, Sendable, Codable {
     case medium
     case hard
     case expert
-    case evil
 
     /// Display name.
     public var name: String {
@@ -36,9 +47,6 @@ public enum Difficulty: String, CaseIterable, Sendable, Codable {
         case .hard: DifficultySpec(minTier: .locked, maxTier: .advanced, minClues: 26, attempts: 80)
         // The web app's "hard": needs a hidden pair, naked triple, or X-wing.
         case .expert: DifficultySpec(minTier: .advanced, maxTier: .advanced, minClues: 22, attempts: 80)
-        // Expert with the clue floor dropped to the theoretical minimum, so the
-        // carve goes as deep as logic allows. Still never needs guessing.
-        case .evil: DifficultySpec(minTier: .advanced, maxTier: .advanced, minClues: 17, attempts: 120)
         }
     }
 }
