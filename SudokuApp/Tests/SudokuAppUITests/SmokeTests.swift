@@ -8,10 +8,15 @@ import XCTest
 /// `GameSessionTests`.
 final class SmokeTests: XCTestCase {
 
-    override func setUp() {
+    // XCUIApplication is main-actor isolated under Swift 6 strict concurrency,
+    // so the tests that drive it must be too. `setUp` stays nonisolated: it
+    // overrides a nonisolated declaration, and changing that isolation is an
+    // error rather than a choice.
+    override nonisolated func setUp() {
         continueAfterFailure = false
     }
 
+    @MainActor
     func testLaunchesToTheDifficultyPicker() {
         let app = XCUIApplication()
         app.launch()
@@ -24,6 +29,7 @@ final class SmokeTests: XCTestCase {
 
     /// The tracer bullet, end to end: choose a difficulty, get a generated
     /// board, tap a cell, tap a digit, see it appear.
+    @MainActor
     func testPlacingADigit() {
         let app = XCUIApplication()
         app.launch()
