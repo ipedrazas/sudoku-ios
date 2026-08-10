@@ -1,7 +1,7 @@
 import SudokuKit
 import SwiftUI
 
-/// The 1–9 pad plus erase.
+/// The 1–9 pad.
 ///
 /// Each key carries how many of that digit are still to place. The web app dims
 /// a key once all nine are down (`NumberPad.tsx:18`); a running count is the
@@ -10,46 +10,56 @@ import SwiftUI
 struct NumberPad: View {
     @Bindable var session: GameSession
 
+    /// Same 450 ms as the board's long-press, for a one-shot note without
+    /// leaving normal mode.
+    private static let longPressDuration = 0.45
+
     var body: some View {
         let remaining = session.remainingCounts
 
-        VStack(spacing: 8) {
-            HStack(spacing: 6) {
-                ForEach(1...SudokuKit.Grid.size, id: \.self) { digit in
-                    key(digit, remaining: remaining[digit] ?? 0)
-                }
+        HStack(spacing: 5) {
+            ForEach(1...SudokuKit.Grid.size, id: \.self) { digit in
+                key(digit, remaining: remaining[digit] ?? 0)
             }
-
-            Button(role: .destructive) {
-                session.erase()
-            } label: {
-                Label("Erase", systemImage: "delete.left")
-                    .frame(maxWidth: .infinity)
-            }
-            .buttonStyle(.bordered)
-            .disabled(session.selection == nil)
         }
     }
 
     private func key(_ digit: Int, remaining: Int) -> some View {
-        Button {
+        let isArmed = session.armedDigit == digit
+        let isDone = remaining == 0
+
+        return Button {
             session.input(digit)
         } label: {
-            VStack(spacing: 1) {
+            VStack(spacing: 0) {
                 Text(String(digit))
-                    .font(.system(.title2, design: .rounded, weight: .medium))
-                Text(remaining > 0 ? String(remaining) : " ")
-                    .font(.caption2)
+                    .font(.system(size: 26, weight: .medium, design: .rounded))
+                    .minimumScaleFactor(0.6)
+                Text(isDone ? " " : String(remaining))
+                    .font(.system(size: 11))
                     .foregroundStyle(.secondary)
             }
             .frame(maxWidth: .infinity)
-            .padding(.vertical, 6)
+            .padding(.vertical, 8)
+            .background(
+                RoundedRectangle(cornerRadius: 10)
+                    .fill(isArmed ? Color.accentColor.opacity(0.25) : Color(.secondarySystemBackground))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 10)
+                    .strokeBorder(isArmed ? Color.accentColor : .clear, lineWidth: 2)
+            )
+            .contentShape(Rectangle())
         }
-        .buttonStyle(.bordered)
-        // A digit with none left to place is still tappable — the player may be
+        .buttonStyle(.plain)
+        // A digit with none left to place stays tappable — the player may be
         // erasing a wrong one — but it should not invite a tap.
-        .opacity(remaining == 0 ? 0.4 : 1)
-        .accessibilityLabel(remaining == 0 ? "\(digit), all placed" : "\(digit), \(remaining) remaining")
+        .opacity(isDone ? 0.4 : 1)
+        .onLongPressGesture(minimumDuration: Self.longPressDuration) {
+            session.inputNote(digit)
+        }
         .accessibilityIdentifier("digit.\(digit)")
+        .accessibilityLabel(isDone ? "\(digit), all placed" : "\(digit), \(remaining) remaining")
+        .accessibilityHint("Double tap and hold to add a note")
     }
 }
