@@ -902,15 +902,34 @@ are stable references for commits and issues.
 | P2-5 | `PuzzlePool` actor + disk persistence + thermal/battery gating | **done** — in SudokuKit, tested headlessly |
 | P2-6 | Clue-count distribution for expert vs evil (§4.5 risk) | **done** — Evil dropped; `rungsAreDistinct` guards a repeat |
 | P2-7 | `SeedPuzzles.bin` generator task + bundled resource | **deferred** — G1 made it unnecessary; `prime(with:)` is the hook |
-| P2-8 | **Tracer bullet**: SwiftUI "New Game" → real board → tap cell → tap digit → digit appears | runs in the simulator |
+| P2-8 | **Tracer bullet**: SwiftUI "New Game" → real board → tap cell → tap digit → digit appears | **done** — merged in #1; a full easy game played end to end on device |
 | P2-9 | **Gate G2** on device | every difficulty inside the §3 budget |
 
 *Needs Xcode from P2-8 onward.*
 
 ### Phase 3 — Full game UX · 5–6 days *(+1 day vs. the strategy doc, for iPad)*
 
+**Three defects found by actually playing the tracer bullet.** They are listed
+first because they are known-wrong today, not speculative polish — and because
+the first is a layout bug rather than a matter of taste:
+
+- **The board renders at roughly half the available width, centred, with a large
+  gap above it.** `BoardView` wraps a `GeometryReader` in `.aspectRatio(1, .fit)`
+  and then takes `min(width, height)`. Inside the `VStack` the container is
+  offered more height than the square it produces, so the board ends up
+  height-constrained *and* centred. Drive the cell size from width alone and let
+  the grid be square on its own.
+- **Number-pad glyphs clip** — 3, 5, 6, 8 and 9 lose their curves. Two `Text`s
+  in a `VStack` inside a `.bordered` button, squeezed into too little height.
+- **Everything else about the board is placeholder**: spacing, box-line weight
+  and the givens/entries contrast were never designed, only made to work.
+
+What was verified on device: generation, selection, digit entry, conflict
+highlighting in red, and solve detection on a complete easy game.
+
 | ID | Task |
 |---|---|
+| P3-0 | Fix the board sizing and number-pad clipping found in P2-8 |
 | P3-1 | `GameSession` with the full intent surface and memoised derived values |
 | P3-2 | `BoardView` + `CellView`: givens, entries, pencil marks, selection ring, box borders |
 | P3-3 | `NumberPad` with per-digit remaining counts; `ControlBar` (undo/redo/erase/notes/hint) |
