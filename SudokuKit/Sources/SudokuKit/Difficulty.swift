@@ -24,7 +24,14 @@ public enum Difficulty: String, CaseIterable, Sendable, Codable {
         // Solvable by scanning alone — singles only, nothing to spot.
         case .easy: DifficultySpec(minTier: .nakedSingle, maxTier: .hiddenSingle, minClues: 34, attempts: 10)
         // Needs locked candidates or a naked pair at least once.
-        case .medium: DifficultySpec(minTier: .locked, maxTier: .locked, minClues: 30, attempts: 60)
+        //
+        // The floor is 28, not the 30 originally planned. Measured over 40
+        // seeds, a floor of 30 stops the carve too early to force a locked
+        // candidate and misses the band 4 times in 40, falling back to a tier-2
+        // puzzle. Since medium is also the daily difficulty, that would mean
+        // roughly three days a month quietly easier than advertised. At 28 the
+        // hit rate is 40/40, and it stays clearly separated from hard's 26.
+        case .medium: DifficultySpec(minTier: .locked, maxTier: .locked, minClues: 28, attempts: 60)
         // Locked candidates throughout, sometimes an advanced pattern.
         case .hard: DifficultySpec(minTier: .locked, maxTier: .advanced, minClues: 26, attempts: 80)
         // The web app's "hard": needs a hidden pair, naked triple, or X-wing.

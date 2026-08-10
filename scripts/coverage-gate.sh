@@ -7,16 +7,23 @@
 set -euo pipefail
 
 THRESHOLD="${1:-90}"
+# The report path is passed in by the Taskfile, which knows the toolchain flags
+# `swift test --show-codecov-path` needs. Falling back to discovery keeps the
+# script usable on its own.
+REPORT="${2:-}"
 
-PROFDATA="$(swift test --show-codecov-path 2>/dev/null || true)"
-if [[ -z "${PROFDATA}" || ! -f "${PROFDATA}" ]]; then
-    echo "coverage-gate: no coverage report found — run 'swift test --enable-code-coverage' first" >&2
+if [[ -z "${REPORT}" ]]; then
+    REPORT="$(swift test --disable-sandbox --show-codecov-path 2>/dev/null | tail -1 || true)"
+fi
+if [[ -z "${REPORT}" || ! -f "${REPORT}" ]]; then
+    echo "coverage-gate: no coverage report at '${REPORT}'" >&2
+    echo "  run 'task test:kit:cover', which builds it first" >&2
     exit 1
 fi
 
 # The codecov JSON reports per-file line coverage; we want SudokuKit sources only.
 PERCENT="$(
-    python3 - "${PROFDATA}" <<'PY'
+    python3 - "${REPORT}" <<'PY'
 import json, sys
 
 with open(sys.argv[1]) as handle:
