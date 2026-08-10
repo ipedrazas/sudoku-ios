@@ -47,6 +47,10 @@ struct WinCelebration: View {
                 }
             }
 
+            if !session.unlockedAchievements.isEmpty {
+                unlocked
+            }
+
             HStack(spacing: 12) {
                 Button("New game", action: onNewGame)
                     .buttonStyle(.borderedProminent)
@@ -62,6 +66,45 @@ struct WinCelebration: View {
         .shadow(radius: 20, y: 8)
         .padding(.horizontal, 24)
         .accessibilityIdentifier("win.summary")
+    }
+
+    /// Anything this solve unlocked.
+    ///
+    /// Shown here rather than as a separate interruption: the achievement is
+    /// part of the reward for the puzzle you just finished, and a second card to
+    /// dismiss would make it feel like admin. The full grid, with its own unlock
+    /// animation, is P6-5.
+    private var unlocked: some View {
+        VStack(spacing: 8) {
+            Divider()
+            ForEach(session.unlockedAchievements) { achievement in
+                HStack(spacing: 10) {
+                    Image(systemName: Self.symbol(for: achievement.icon))
+                        .foregroundStyle(.yellow)
+                        .font(.headline)
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text(achievement.name)
+                            .font(.subheadline.weight(.semibold))
+                        Text(achievement.detail)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    Spacer(minLength: 0)
+                }
+            }
+        }
+        .accessibilityIdentifier("win.achievements")
+    }
+
+    /// The engine names icon families rather than SF Symbols, because it has no
+    /// business knowing what platform is drawing it.
+    private static func symbol(for icon: String) -> String {
+        switch icon {
+        case "zap": "bolt.fill"
+        case "trophy": "trophy.fill"
+        case "fire": "flame.fill"
+        default: "star.fill"
+        }
     }
 
     private func statistic(_ label: String, _ value: String) -> some View {

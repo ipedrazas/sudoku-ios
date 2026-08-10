@@ -31,6 +31,10 @@ final class GameSession {
 
     // MARK: - Puzzle
 
+    /// Identifies the puzzle in the store. A session and its `PuzzleRecord`
+    /// share it, which is what makes a saved game findable again.
+    let id: UUID
+
     /// The puzzle as dealt, kept so the board can be restarted and so hints have
     /// a solution to check against.
     let puzzle: GeneratedPuzzle
@@ -80,6 +84,19 @@ final class GameSession {
     /// Units that just became correctly complete, for the celebration.
     private(set) var celebratingUnits: Set<UnitRef> = []
 
+    /// Achievements this solve unlocked, for the win card.
+    ///
+    /// Filled in by whatever owns persistence — unlocking depends on the whole
+    /// history, which a single session has no business knowing about.
+    var unlockedAchievements: [Achievement] = []
+
+    /// Called after every board or pencil mutation.
+    ///
+    /// The hook rather than observation: autosave needs to know that something
+    /// changed, and a closure the owner sets is both cheaper than
+    /// `withObservationTracking` and testable without a view in the loop.
+    var didChange: (() -> Void)?
+
     /// Bumped on every board or pencil mutation. Derived values memoise against
     /// it so a redraw does not re-derive conflicts for the whole grid.
     private(set) var version = 0
@@ -102,12 +119,38 @@ final class GameSession {
 
     // MARK: - Init
 
-    init(puzzle: GeneratedPuzzle, showsConflicts: Bool = false) {
+    /// A new game, or a saved one picked up where it was left.
+    ///
+    /// Restoring goes through the initializer rather than a `restore` method so
+    /// there is no window in which a session exists with the wrong board, and no
+    /// way for a restore to land on top of a game already in progress.
+    init(
+        id: UUID = UUID(),
+        puzzle: GeneratedPuzzle,
+        restoring state: SavedGameState? = nil,
+        showsConflicts: Bool = false
+    ) {
+        self.id = id
         self.puzzle = puzzle
-        self.board = puzzle.puzzle
+        self.board = state?.board ?? puzzle.puzzle
+        // Givens come from the puzzle as dealt, never from the restored board:
+        // the two differ by exactly the cells the player filled in, and taking
+        // them from the board would freeze the player's own entries.
         self.givens = (0..<SudokuKit.Grid.cellCount).map { puzzle.puzzle[$0] != 0 }
-        self.pencil = [UInt16](repeating: 0, count: SudokuKit.Grid.cellCount)
+        self.pencil = state?.pencil ?? [UInt16](repeating: 0, count: SudokuKit.Grid.cellCount)
         self.showsConflicts = showsConflicts
+
+        if let state {
+            elapsed = .seconds(state.elapsedSeconds)
+            hintPoints = state.hintPoints
+            hintsUsed = state.hintsUsed
+        }
+
+        // Record which units are already complete, so the first move after a
+        // restore celebrates only what it actually completes. Leaving the
+        // baseline unset instead would swallow that first celebration
+        // (`useGameBoard.ts:87` establishes the same baseline on load).
+        detectNewlyCompletedUnits()
     }
 
     var difficulty: Difficulty { puzzle.difficulty }
@@ -302,6 +345,7 @@ final class GameSession {
         hintsUsed = 0
         finishedAt = nil
         showsWinSummary = false
+        unlockedAchievements = []
         elapsed = .zero
         idle = .zero
         undoStack.removeAll()
@@ -471,6 +515,30 @@ final class GameSession {
         Validator.isSolved(board)
     }
 
+    // MARK: - Persistence
+
+    /// Whether anything has happened that is worth keeping.
+    ///
+    /// Time alone does not count. Tapping a difficulty, looking at the board and
+    /// leaving should not leave a row in the resume list — but a single pencil
+    /// mark should.
+    var hasProgress: Bool {
+        board != puzzle.puzzle || pencil.contains { $0 != 0 } || hintPoints > 0
+    }
+
+    /// The session as the store holds it.
+    var savedState: SavedGameState {
+        SavedGameState(
+            puzzleID: id,
+            board: board,
+            pencil: pencil,
+            elapsedSeconds: elapsedSeconds,
+            hintsUsed: hintsUsed,
+            hintPoints: hintPoints,
+            updatedAt: Date()
+        )
+    }
+
     // MARK: - Change handling
 
     private func boardDidChange() {
@@ -482,6 +550,9 @@ final class GameSession {
             isPaused = true
             showsWinSummary = true
         }
+
+        // Last, so a listener that records the completion sees `finishedAt` set.
+        didChange?()
     }
 
     /// Fires the celebration only for units that became complete *just now*.

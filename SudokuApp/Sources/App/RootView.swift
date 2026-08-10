@@ -1,41 +1,55 @@
 import SudokuKit
 import SwiftUI
 
-/// The tracer bullet: pick a difficulty, get a real generated puzzle, play it.
+/// The home screen: what you were playing, and what you could play next.
 ///
 /// Deliberately thin. The real shell — daily, calendar, stats, settings, and a
 /// `NavigationSplitView` sidebar on iPad — arrives with the phases that fill
-/// those screens. What this proves is the whole vertical slice: the engine
-/// generates, the pool serves, the board renders, and a tap places a digit.
+/// those screens.
 struct RootView: View {
-    @State private var provider = PuzzleProvider()
+    let provider: PuzzleProvider
+    let library: GameLibrary
+
     @State private var session: GameSession?
 
     var body: some View {
         NavigationStack {
             if let session {
-                GameScreen(session: session) { self.session = nil }
+                GameScreen(session: session) { endGame() }
             } else {
-                difficultyPicker
+                home
             }
         }
         .task {
             provider.warmUp()
+            library.refresh()
             if let difficulty = Self.launchDifficulty { start(difficulty) }
         }
     }
 
-    private var difficultyPicker: some View {
-        VStack(spacing: 24) {
-            VStack(spacing: 4) {
-                Text("Sudoku and Cake")
-                    .font(.largeTitle.bold())
-                Text("Every puzzle is solvable by logic alone.")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
+    // MARK: - Home
+
+    /// A list rather than the centred stack this screen started as, because it
+    /// now has two jobs: resuming and starting. Swipe-to-delete is the other
+    /// reason — it is free in a `List` and hand-rolled anywhere else.
+    private var home: some View {
+        List {
+            if !library.savedGames.isEmpty {
+                Section("In progress") {
+                    ForEach(Array(library.savedGames.enumerated()), id: \.element.id) { index, summary in
+                        Button {
+                            resume(summary)
+                        } label: {
+                            SavedGameRow(summary: summary)
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityIdentifier("resume.\(index)")
+                    }
+                    .onDelete(perform: delete)
+                }
             }
 
-            VStack(spacing: 12) {
+            Section {
                 ForEach(Difficulty.allCases, id: \.self) { difficulty in
                     Button {
                         start(difficulty)
@@ -48,18 +62,20 @@ struct RootView: View {
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                         }
-                        .padding(.vertical, 4)
+                        // Without this the row is only tappable where there is
+                        // text, and the gap in the middle does nothing.
+                        .contentShape(.rect)
                     }
-                    .buttonStyle(.bordered)
+                    .buttonStyle(.plain)
                     .accessibilityIdentifier("difficulty.\(difficulty.rawValue)")
                 }
+            } header: {
+                Text("New game")
+            } footer: {
+                Text("Every puzzle is solvable by logic alone.")
             }
-            .frame(maxWidth: 420)
-            .padding(.horizontal)
         }
-        .navigationTitle("New game")
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbarVisibility(.hidden, for: .navigationBar)
+        .navigationTitle("Sudoku and Cake")
     }
 
     /// Names the technique each rung actually requires. The difficulty ladder is
@@ -74,6 +90,39 @@ struct RootView: View {
         }
     }
 
+    // MARK: - Actions
+
+    private func start(_ difficulty: Difficulty) {
+        Task {
+            let puzzle = await provider.newGame(difficulty)
+            let session = library.start(puzzle)
+            Self.prefill(session)
+            self.session = session
+        }
+    }
+
+    private func resume(_ summary: SavedGameSummary) {
+        session = library.resume(summary)
+    }
+
+    private func delete(at offsets: IndexSet) {
+        for summary in offsets.map({ library.savedGames[$0] }) {
+            // Deleting the game currently on screen would leave a session with
+            // nowhere to save; the library detaches it, and the board is only
+            // ever behind this screen, never in front of it.
+            if summary.id == session?.id { session = nil }
+            library.delete(summary)
+        }
+    }
+
+    /// Leaves the game, saving it on the way out.
+    private func endGame() {
+        library.detach()
+        session = nil
+    }
+
+    // MARK: - Launch arguments
+
     /// Lets a launch argument open straight into a game: `-startGame easy`.
     ///
     /// A development affordance, and a deliberate one. Screenshot and UI-test
@@ -85,15 +134,6 @@ struct RootView: View {
             return nil
         }
         return Difficulty(rawValue: arguments[index + 1])
-    }
-
-    private func start(_ difficulty: Difficulty) {
-        Task {
-            let puzzle = await provider.newGame(difficulty)
-            let session = GameSession(puzzle: puzzle, showsConflicts: true)
-            Self.prefill(session)
-            self.session = session
-        }
     }
 
     /// `-prefill N` fills all but N cells from the solution.
@@ -114,5 +154,45 @@ struct RootView: View {
             session.input(session.puzzle.solution[cell])
         }
         session.selection = nil
+    }
+}
+
+// MARK: - Saved game row
+
+/// One game in progress: what it is, how far in, and how long ago.
+///
+/// The progress bar counts the cells the *player* has to fill, not all 81 — a
+/// fresh easy puzzle arrives 34/81 filled and showing that as 42% done would be
+/// flattering nonsense.
+private struct SavedGameRow: View {
+    let summary: SavedGameSummary
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack {
+                Text(summary.difficulty.name)
+                    .font(.headline)
+                Spacer()
+                Text(summary.updatedAt, format: .relative(presentation: .named))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            ProgressView(value: summary.progress)
+
+            HStack {
+                Label(summary.formattedTime, systemImage: "clock")
+                Spacer()
+                Text("^[\(summary.remainingCells) cell](inflect: true) left")
+            }
+            .font(.caption)
+            .foregroundStyle(.secondary)
+        }
+        .padding(.vertical, 4)
+        .contentShape(.rect)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(
+            "\(summary.difficulty.name), \(summary.formattedTime) played, \(summary.remainingCells) cells left"
+        )
     }
 }

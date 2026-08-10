@@ -82,10 +82,19 @@ Pure logic, `Sendable` throughout, value types. Ported from the Go backend:
    spinner on "New game".
 
 5. **SwiftData models stay CloudKit-shaped** even though sync is off: no
-   `@Attribute(.unique)`, every property optional or defaulted, all relationships
-   optional and inverse-declared. Sync should later be one line, not a migration.
+   `@Attribute(.unique)`, every property optional or defaulted, and no
+   relationships at all — rows reference each other by `UUID`. Sync should later
+   be one line, not a migration. **The schema is frozen**: see
+   `plans/schema-v1.md`. Later phases add entities and optional fields; they do
+   not rename, retype or re-encode anything.
 
-6. **No OCR / photo import.** Tried twice in the web app and removed; manual
+6. **Nothing outside `Persistence/` touches a `ModelContext` or a `@Model`
+   class.** Views and tests go through `GameRepository`, which trades in value
+   types. That is what lets the whole persistence layer be swapped for an
+   in-memory implementation in tests, and what keeps non-`Sendable` model objects
+   out of the view layer.
+
+7. **No OCR / photo import.** Tried twice in the web app and removed; manual
    entry replaced it. Do not reintroduce it.
 
 ## Testing

@@ -23,10 +23,19 @@ final class SmokeTests: XCTestCase {
         continueAfterFailure = false
     }
 
+    /// A run must not inherit whatever the last one left in the store, or the
+    /// home screen has an "In progress" section that no test put there.
+    @MainActor
+    private func launchApp(arguments: [String] = ["-inMemoryStore"]) -> XCUIApplication {
+        let app = XCUIApplication()
+        app.launchArguments = arguments
+        app.launch()
+        return app
+    }
+
     @MainActor
     func testLaunchesToTheDifficultyPicker() {
-        let app = XCUIApplication()
-        app.launch()
+        let app = launchApp()
 
         XCTAssertTrue(
             app.buttons["difficulty.easy"].waitForExistence(timeout: 30),
@@ -38,8 +47,7 @@ final class SmokeTests: XCTestCase {
     /// board, tap a cell, tap a digit, see it appear.
     @MainActor
     func testPlacingADigit() {
-        let app = XCUIApplication()
-        app.launch()
+        let app = launchApp()
 
         let easy = app.buttons["difficulty.easy"]
         XCTAssertTrue(easy.waitForExistence(timeout: 30), "the difficulty picker should appear")
@@ -71,6 +79,51 @@ final class SmokeTests: XCTestCase {
         XCTAssertFalse(
             filled.label.hasSuffix("empty"),
             "the tapped cell should have taken the digit, but reads '\(filled.label)'"
+        )
+    }
+
+    /// Phase 4's acceptance criterion, on a real device store: play, quit the
+    /// app outright, come back, and find the game where it was left.
+    ///
+    /// This is the one test that cannot use `-inMemoryStore`, for the obvious
+    /// reason — so it uses `-resetStore` on the first launch instead, and the
+    /// second launch deliberately does not, because inheriting the first
+    /// launch's state is the entire point.
+    @MainActor
+    func testAGameSurvivesBeingQuit() {
+        let app = launchApp(arguments: ["-resetStore"])
+
+        let easy = app.buttons["difficulty.easy"]
+        XCTAssertTrue(easy.waitForExistence(timeout: 30), "the difficulty picker should appear")
+        easy.tap()
+
+        XCTAssertTrue(app.buttons["cell.0"].waitForExistence(timeout: 30), "the board should render")
+
+        let emptyCell = app.buttons.matching(
+            NSPredicate(format: "identifier BEGINSWITH %@ AND label ENDSWITH %@", "cell.", "empty")
+        ).firstMatch
+        let identifier = emptyCell.identifier
+        emptyCell.tap()
+        app.buttons["digit.5"].tap()
+
+        // Backgrounding is what flushes the pending autosave, so it has to
+        // happen before the process goes away — as it does when a player
+        // swipes the app out of the switcher.
+        XCUIDevice.shared.press(.home)
+        app.terminate()
+
+        app.launchArguments = []
+        app.launch()
+
+        let resume = app.buttons["resume.0"]
+        XCTAssertTrue(resume.waitForExistence(timeout: 30), "the game should be offered for resuming")
+        resume.tap()
+
+        let restored = app.buttons[identifier]
+        XCTAssertTrue(restored.waitForExistence(timeout: 30), "the board should come back")
+        XCTAssertFalse(
+            restored.label.hasSuffix("empty"),
+            "the digit placed before quitting should still be there, but the cell reads '\(restored.label)'"
         )
     }
 }

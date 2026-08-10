@@ -25,7 +25,7 @@ final class ScreenshotTests: XCTestCase {
         let directory = try XCTUnwrap(directory)
 
         let app = XCUIApplication()
-        app.launchArguments = ["-startGame", "easy"]
+        app.launchArguments = ["-startGame", "easy", "-inMemoryStore"]
         app.launch()
 
         XCTAssertTrue(app.buttons["cell.0"].waitForExistence(timeout: 30))
