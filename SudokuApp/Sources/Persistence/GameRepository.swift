@@ -23,6 +23,8 @@ protocol GameRepository: AnyObject {
     func puzzle(id: UUID) throws -> StoredPuzzle?
     /// The stored daily for a `"YYYY-MM-DD"` key, if it has been generated.
     func puzzle(dateKey: String) throws -> StoredPuzzle?
+    /// Every puzzle with a date key — the dailies that have been generated.
+    func dailyPuzzles() throws -> [StoredPuzzle]
 
     // MARK: Games in progress
 
@@ -85,6 +87,10 @@ final class InMemoryGameRepository: GameRepository {
 
     func puzzle(dateKey: String) throws -> StoredPuzzle? {
         puzzles.values.first { $0.dateKey == dateKey }
+    }
+
+    func dailyPuzzles() throws -> [StoredPuzzle] {
+        puzzles.values.filter { $0.dateKey != nil }
     }
 
     func save(game state: SavedGameState) throws {

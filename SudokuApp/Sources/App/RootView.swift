@@ -9,21 +9,50 @@ import SwiftUI
 struct RootView: View {
     let provider: PuzzleProvider
     let library: GameLibrary
+    let daily: DailyModel
 
+    /// Where the stack can go. The game is a destination like any other, so
+    /// finishing a daily returns to the calendar it was started from rather than
+    /// dumping the player back at the top.
+    enum Route: Hashable {
+        case daily
+        case calendar
+        case game
+    }
+
+    @State private var path: [Route] = []
     @State private var session: GameSession?
 
     var body: some View {
-        NavigationStack {
-            if let session {
-                GameScreen(session: session) { endGame() }
-            } else {
-                home
-            }
+        NavigationStack(path: $path) {
+            home
+                .navigationDestination(for: Route.self, destination: destination)
         }
         .task {
             provider.warmUp()
             library.refresh()
+            daily.refresh()
             if let difficulty = Self.launchDifficulty { start(difficulty) }
+        }
+        // Covers the back button and the back swipe, which no callback of ours
+        // would otherwise hear about — a session left attached would keep
+        // autosaving from behind whatever replaced it.
+        .onChange(of: path) { _, path in
+            if !path.contains(.game) { releaseSession() }
+        }
+    }
+
+    @ViewBuilder
+    private func destination(for route: Route) -> some View {
+        switch route {
+        case .daily:
+            DailyScreen(model: daily, onPlay: playDaily) { path.append(.calendar) }
+        case .calendar:
+            CalendarScreen(model: daily, onPlay: playDaily)
+        case .game:
+            if let session {
+                GameScreen(session: session) { endGame() }
+            }
         }
     }
 
@@ -34,6 +63,29 @@ struct RootView: View {
     /// reason — it is free in a `List` and hand-rolled anywhere else.
     private var home: some View {
         List {
+            Section {
+                Button {
+                    path.append(.daily)
+                } label: {
+                    LabeledContent {
+                        Image(systemName: "chevron.right")
+                            .font(.footnote.weight(.semibold))
+                            .foregroundStyle(.tertiary)
+                    } label: {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Daily puzzle")
+                                .font(.headline)
+                            Text(dailySubtitle)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                    .contentShape(.rect)
+                }
+                .buttonStyle(.plain)
+                .accessibilityIdentifier("home.daily")
+            }
+
             if !library.savedGames.isEmpty {
                 Section("In progress") {
                     ForEach(Array(library.savedGames.enumerated()), id: \.element.id) { index, summary in
@@ -78,6 +130,15 @@ struct RootView: View {
         .navigationTitle("Sudoku and Cake")
     }
 
+    private var dailySubtitle: String {
+        let streak = daily.streak.current
+        guard let today = daily.today() else {
+            return streak > 0 ? "Not played — \(streak) day streak at stake" : "A new puzzle every day"
+        }
+        if today.isCompleted { return streak > 0 ? "Solved — \(streak) day streak" : "Solved" }
+        return today.isInProgress ? "In progress" : "Not played yet"
+    }
+
     /// Names the technique each rung actually requires. The difficulty ladder is
     /// defined by technique rather than clue count, so saying so is more honest
     /// than "medium" and teaches the vocabulary the hints will use.
@@ -97,12 +158,23 @@ struct RootView: View {
             let puzzle = await provider.newGame(difficulty)
             let session = library.start(puzzle)
             Self.prefill(session)
-            self.session = session
+            show(session)
         }
     }
 
     private func resume(_ summary: SavedGameSummary) {
-        session = library.resume(summary)
+        show(library.resume(summary))
+    }
+
+    /// Plays the daily for a date — today's from the daily screen, any past
+    /// day's from the calendar.
+    private func playDaily(_ date: Date) {
+        Task { show(await library.daily(for: date)) }
+    }
+
+    private func show(_ session: GameSession) {
+        self.session = session
+        if path.last != .game { path.append(.game) }
     }
 
     private func delete(at offsets: IndexSet) {
@@ -115,10 +187,22 @@ struct RootView: View {
         }
     }
 
-    /// Leaves the game, saving it on the way out.
+    /// Leaves the game, saving it on the way out, and returns to whatever
+    /// pushed it.
     private func endGame() {
+        if path.last == .game { path.removeLast() }
+        releaseSession()
+    }
+
+    /// Idempotent, because it is called both explicitly and from the path
+    /// observer that catches the back button.
+    private func releaseSession() {
+        guard session != nil else { return }
         library.detach()
         session = nil
+        // The daily may have just been solved, and both this screen and the
+        // calendar behind it say so.
+        daily.refresh()
     }
 
     // MARK: - Launch arguments

@@ -591,6 +591,7 @@ private final class CountingRepository: GameRepository {
     func save(puzzle: StoredPuzzle) throws { try backing.save(puzzle: puzzle) }
     func puzzle(id: UUID) throws -> StoredPuzzle? { try backing.puzzle(id: id) }
     func puzzle(dateKey: String) throws -> StoredPuzzle? { try backing.puzzle(dateKey: dateKey) }
+    func dailyPuzzles() throws -> [StoredPuzzle] { try backing.dailyPuzzles() }
 
     func save(game state: SavedGameState) throws {
         savedGameWrites += 1

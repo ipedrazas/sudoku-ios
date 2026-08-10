@@ -33,6 +33,26 @@ final class SmokeTests: XCTestCase {
         return app
     }
 
+    /// Waits for a cell to stop reading as empty.
+    ///
+    /// Reading `.label` once is a read of whatever snapshot XCUITest last took,
+    /// and `waitForExistence` returns from cache without refreshing it — so a
+    /// digit that has been placed can still look absent. That failed this suite
+    /// on a loaded runner while the identical build passed elsewhere. A
+    /// predicate expectation re-queries until it agrees or the time is up.
+    @MainActor
+    private func waitUntilFilled(_ cell: XCUIElement, timeout: TimeInterval = 15, _ message: String) {
+        let expectation = XCTNSPredicateExpectation(
+            predicate: NSPredicate(format: "NOT (label ENDSWITH %@)", "empty"),
+            object: cell
+        )
+        XCTAssertEqual(
+            XCTWaiter().wait(for: [expectation], timeout: timeout),
+            .completed,
+            "\(message) — the cell reads '\(cell.label)'"
+        )
+    }
+
     @MainActor
     func testLaunchesToTheDifficultyPicker() {
         let app = launchApp()
@@ -76,9 +96,26 @@ final class SmokeTests: XCTestCase {
         // Same cell, addressed by identifier, should no longer read as empty.
         let filled = app.buttons[identifier]
         XCTAssertTrue(filled.waitForExistence(timeout: 10))
-        XCTAssertFalse(
-            filled.label.hasSuffix("empty"),
-            "the tapped cell should have taken the digit, but reads '\(filled.label)'"
+        waitUntilFilled(filled, "the tapped cell should have taken the digit")
+    }
+
+    /// The daily, end to end: it is generated on demand, so this is also the
+    /// only check that the push into a freshly generated puzzle works.
+    @MainActor
+    func testPlayingTheDaily() {
+        let app = launchApp()
+
+        let daily = app.buttons["home.daily"]
+        XCTAssertTrue(daily.waitForExistence(timeout: 30), "the home screen should offer the daily")
+        daily.tap()
+
+        let play = app.buttons["daily.play"]
+        XCTAssertTrue(play.waitForExistence(timeout: 10), "the daily screen should offer a game")
+        play.tap()
+
+        XCTAssertTrue(
+            app.buttons["cell.0"].waitForExistence(timeout: 30),
+            "the daily should generate and render"
         )
     }
 
@@ -131,9 +168,6 @@ final class SmokeTests: XCTestCase {
 
         let restored = app.buttons[identifier]
         XCTAssertTrue(restored.waitForExistence(timeout: 30), "the board should come back")
-        XCTAssertFalse(
-            restored.label.hasSuffix("empty"),
-            "the digit placed before quitting should still be there, but the cell reads '\(restored.label)'"
-        )
+        waitUntilFilled(restored, "the digit placed before quitting should still be there")
     }
 }
