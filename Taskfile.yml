@@ -1,0 +1,148 @@
+version: "3"
+
+vars:
+  # SwiftPM sandboxes manifest evaluation with sandbox-exec, which cannot nest
+  # inside an outer sandbox (nono). Disabling SwiftPM's own sandbox is safe: it
+  # only governs manifest/plugin execution, and this package has neither
+  # dependencies nor build plugins.
+  SWIFT_FLAGS: "--disable-sandbox"
+  # Swift Testing ships with the Command Line Tools but SwiftPM does not wire up
+  # its search paths when full Xcode is absent, so `import Testing` fails to
+  # compile and then fails to load. These flags supply the framework path and the
+  # two rpaths it needs. They resolve to nothing once Xcode is installed, which
+  # is also why they are computed rather than hard-coded.
+  CLT_FRAMEWORKS:
+    sh: 'test -d /Library/Developer/CommandLineTools/Library/Developer/Frameworks && ! xcodebuild -version >/dev/null 2>&1 && echo /Library/Developer/CommandLineTools/Library/Developer/Frameworks || true'
+  CLT_INTEROP: /Library/Developer/CommandLineTools/Library/Developer/usr/lib
+  TEST_FLAGS: '{{if .CLT_FRAMEWORKS}}-Xswiftc -F -Xswiftc {{.CLT_FRAMEWORKS}} -Xlinker -rpath -Xlinker {{.CLT_FRAMEWORKS}} -Xlinker -rpath -Xlinker {{.CLT_INTEROP}}{{end}}'
+  KIT_DIR: SudokuKit
+  APP_DIR: SudokuApp
+  SCHEME: SudokuApp
+  IPHONE_DEST: "platform=iOS Simulator,name=iPhone 16"
+  IPAD_DEST: "platform=iOS Simulator,name=iPad Pro 11-inch (M4)"
+  # The web repo's generator package, source of the cross-check fixture.
+  WEB_REPO: "../sudoku-and-cake"
+
+tasks:
+  default:
+    cmds:
+      - task --list
+
+  install:
+    desc: Resolve Swift package dependencies and check the toolchain
+    cmds:
+      - swift --version
+      - swift package resolve {{.SWIFT_FLAGS}}
+      - cmd: |
+          if ! xcodebuild -version >/dev/null 2>&1; then
+            echo ""
+            echo "  NOTE: full Xcode is not installed (Command Line Tools only)."
+            echo "  SudokuKit builds and tests fine without it — 'task test:kit'."
+            echo "  App and widget targets need Xcode; install it before P2-8."
+            echo ""
+          fi
+        ignore_error: true
+
+  build:
+    desc: Build SudokuKit and, if Xcode is present, the app
+    cmds:
+      - task: build:kit
+      - task: build:app
+
+  build:kit:
+    desc: Build SudokuKit (no Xcode required)
+    cmds:
+      - swift build {{.SWIFT_FLAGS}} -c release
+
+  build:app:
+    desc: Build the iOS app (requires full Xcode)
+    deps: [xcodegen]
+    status:
+      - "! xcodebuild -version >/dev/null 2>&1"
+    cmds:
+      - xcodebuild build -project {{.APP_DIR}}/{{.SCHEME}}.xcodeproj -scheme {{.SCHEME}} -destination '{{.IPHONE_DEST}}'
+
+  test:
+    desc: Run all tests
+    cmds:
+      - task: test:kit
+      - task: test:app
+
+  test:kit:
+    desc: Run SudokuKit tests (no Xcode required)
+    cmds:
+      - swift test {{.SWIFT_FLAGS}} {{.TEST_FLAGS}}
+
+  test:kit:cover:
+    desc: Run SudokuKit tests with coverage; SudokuKit must be at least 90%
+    cmds:
+      - swift test {{.SWIFT_FLAGS}} {{.TEST_FLAGS}} --enable-code-coverage
+      - ./scripts/coverage-gate.sh 90
+
+  test:app:
+    desc: Run app tests on iPhone and iPad simulators (requires full Xcode)
+    deps: [xcodegen]
+    status:
+      - "! xcodebuild -version >/dev/null 2>&1"
+    cmds:
+      - xcodebuild test -project {{.APP_DIR}}/{{.SCHEME}}.xcodeproj -scheme {{.SCHEME}} -destination '{{.IPHONE_DEST}}'
+      - xcodebuild test -project {{.APP_DIR}}/{{.SCHEME}}.xcodeproj -scheme {{.SCHEME}} -destination '{{.IPAD_DEST}}'
+
+  bench:
+    desc: Run the generation performance harness (Gate G1) and print the distribution
+    env:
+      SUDOKU_BENCH: "1"
+    cmds:
+      - swift test {{.SWIFT_FLAGS}} {{.TEST_FLAGS}} -c release --filter PerformanceTests
+
+  lint:
+    desc: Lint Swift sources
+    env:
+      # SwiftLint loads sourcekitd, which lives inside Xcode when it is
+      # installed and inside the Command Line Tools when it is not. Pointing the
+      # dynamic loader at the CLT copy makes linting work in both cases.
+      DYLD_FRAMEWORK_PATH: /Library/Developer/CommandLineTools/usr/lib
+    cmds:
+      - swiftlint --strict
+
+  format:
+    desc: Format Swift sources in place
+    cmds:
+      - swift-format format --in-place --recursive --configuration .swift-format SudokuKit SudokuApp SudokuWidgets
+
+  format:check:
+    desc: Check formatting without writing
+    cmds:
+      - swift-format lint --recursive --strict --configuration .swift-format SudokuKit SudokuApp SudokuWidgets
+
+  xcodegen:
+    desc: Regenerate the Xcode project from project.yml
+    status:
+      - "! command -v xcodegen >/dev/null 2>&1"
+    cmds:
+      - xcodegen generate --spec {{.APP_DIR}}/project.yml --project {{.APP_DIR}}
+
+  run:
+    desc: Build and run the app in the iPhone simulator (requires full Xcode)
+    deps: [build:app]
+    cmds:
+      - ./scripts/run-simulator.sh "{{.IPHONE_DEST}}"
+
+  fixtures:
+    desc: Regenerate the Go-to-Swift cross-check fixture from the web repo's generator
+    dir: tools/export-fixtures
+    env:
+      # The tool reaches the web repo through a local `replace`, so nothing needs
+      # downloading. GOPROXY=off makes that explicit and keeps the build offline
+      # rather than stalling on module resolution.
+      GOPROXY: "off"
+      GOFLAGS: "-mod=mod"
+    cmds:
+      - go run . -out ../../{{.KIT_DIR}}/Tests/SudokuKitTests/Fixtures/tier-corpus.json
+      - echo "Fixture regenerated. Re-run 'task test:kit' to verify the port still agrees."
+
+  clean:
+    desc: Remove build artefacts
+    cmds:
+      - rm -rf .build
+      - rm -rf {{.APP_DIR}}/{{.SCHEME}}.xcodeproj

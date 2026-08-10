@@ -1,0 +1,135 @@
+name: SudokuApp
+
+# The .xcodeproj is generated, never committed: a hand-maintained .pbxproj is a
+# merge-conflict generator and makes CI reproducibility worse. `task xcodegen`
+# regenerates it; CI regenerates before every build.
+
+options:
+  bundleIdPrefix: dev.andcake
+  deploymentTarget:
+    iOS: "18.0"
+  createIntermediateGroups: true
+  groupSortPosition: top
+  generateEmptyDirectories: true
+
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    SWIFT_STRICT_CONCURRENCY: complete
+    SWIFT_TREAT_WARNINGS_AS_ERRORS: true
+    ENABLE_USER_SCRIPT_SANDBOXING: true
+    DEVELOPMENT_TEAM: ""
+    CODE_SIGN_STYLE: Automatic
+    MARKETING_VERSION: "1.0"
+    CURRENT_PROJECT_VERSION: "1"
+
+packages:
+  SudokuKit:
+    path: ".."
+
+targets:
+  SudokuApp:
+    type: application
+    platform: iOS
+    # Universal from day one: adaptive layout is cheap to design in and
+    # expensive to retrofit. See §8 of plans/implementation-plan.md.
+    deviceFamily: [1, 2]
+    sources:
+      - path: Sources
+      - path: Resources
+    dependencies:
+      - package: SudokuKit
+        product: SudokuKit
+      - target: SudokuWidgets
+        embed: true
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: dev.andcake.sudoku
+        INFOPLIST_KEY_UILaunchScreen_Generation: true
+        INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone: >-
+          UIInterfaceOrientationPortrait
+          UIInterfaceOrientationLandscapeLeft
+          UIInterfaceOrientationLandscapeRight
+        INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad: >-
+          UIInterfaceOrientationPortrait
+          UIInterfaceOrientationPortraitUpsideDown
+          UIInterfaceOrientationLandscapeLeft
+          UIInterfaceOrientationLandscapeRight
+        INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents: true
+        # Two puzzles side by side on iPad. Cheap, because GameSession is
+        # per-scene state and never a global singleton.
+        INFOPLIST_KEY_UIApplicationSceneManifest_Generation: true
+        INFOPLIST_KEY_UIRequiresFullScreen: false
+    entitlements:
+      path: Resources/SudokuApp.entitlements
+      properties:
+        com.apple.security.application-groups:
+          - group.dev.andcake.sudoku
+        com.apple.developer.associated-domains:
+          - applinks:sudoku.ios.andcake.dev
+    info:
+      path: Resources/Info.plist
+      properties:
+        CFBundleDisplayName: Sudoku and Cake
+        CFBundleURLTypes:
+          - CFBundleURLName: dev.andcake.sudoku.puzzle
+            CFBundleURLSchemes: [sudokuandcake]
+        UIBackgroundModes: []
+        ITSAppUsesNonExemptEncryption: false
+
+  SudokuWidgets:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: ../SudokuWidgets
+    dependencies:
+      - package: SudokuKit
+        product: SudokuKit
+      - sdk: WidgetKit.framework
+      - sdk: SwiftUI.framework
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: dev.andcake.sudoku.widgets
+    entitlements:
+      path: Resources/SudokuWidgets.entitlements
+      properties:
+        com.apple.security.application-groups:
+          - group.dev.andcake.sudoku
+    info:
+      path: Resources/WidgetsInfo.plist
+      properties:
+        CFBundleDisplayName: Sudoku and Cake
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+
+  SudokuAppTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources: [Tests/SudokuAppTests]
+    dependencies:
+      - target: SudokuApp
+      - package: SudokuKit
+        product: SudokuKit
+
+  SudokuAppUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources: [Tests/SudokuAppUITests]
+    dependencies:
+      - target: SudokuApp
+
+schemes:
+  SudokuApp:
+    build:
+      targets:
+        SudokuApp: all
+        SudokuWidgets: all
+    test:
+      targets:
+        - SudokuAppTests
+        - SudokuAppUITests
+      gatherCoverageData: true
+    run:
+      config: Debug
+    archive:
+      config: Release

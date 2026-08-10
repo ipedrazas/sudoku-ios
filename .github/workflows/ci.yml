@@ -1,0 +1,110 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# Every job drives Taskfile.yml rather than calling swift/xcodebuild directly, so
+# CI and a developer's machine run the same commands. That matters more than
+# usual here: the toolchain flags differ between a full-Xcode install and a
+# Command Line Tools one, and the Taskfile is where that difference is resolved.
+jobs:
+  # The fast gate, covering the part of the codebase where bugs are expensive:
+  # the technique rater and the solver. Needs no Xcode project and no simulator.
+  kit:
+    name: SudokuKit
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Task and linters
+        run: brew install go-task swiftlint swift-format
+
+      - name: Show toolchain
+        run: task install
+
+      - name: Build
+        run: task build:kit
+
+      - name: Test with coverage (>= 90%)
+        run: task test:kit:cover
+
+      - name: SwiftLint
+        run: task lint
+
+      - name: swift-format
+        run: task format:check
+
+  # Generation must stay fast. A refactor that triples carve cost should fail the
+  # build, not ship. Budgets live in PerformanceTests.swift.
+  bench:
+    name: Generation budgets
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Task
+        run: brew install go-task
+      - name: Run performance harness
+        run: task bench
+
+  # The fixture is the proof the Swift port matches Go. Regenerating it must stay
+  # possible, or it quietly rots into a snapshot nobody can reproduce.
+  fixtures:
+    name: Fixture exporter builds
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: sudoku-ios
+      - name: Check out the web app (the port's reference)
+        uses: actions/checkout@v4
+        with:
+          repository: ipedrazas/sudoku-and-cake
+          path: sudoku-and-cake
+        continue-on-error: true
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.25"
+      - name: Build the exporter
+        working-directory: sudoku-ios/tools/export-fixtures
+        env:
+          GOPROXY: "off"
+          GOFLAGS: "-mod=mod"
+        run: go build -o /dev/null .
+        continue-on-error: true
+
+  # From Phase 3 onward. iPad is not optional — it ships in v1, so it gets a
+  # destination of its own rather than an assumption that compact width covers it.
+  app:
+    name: App (${{ matrix.destination_name }})
+    runs-on: macos-15
+    if: ${{ hashFiles('SudokuApp/Sources/**/*.swift') != '' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - destination_name: iPhone
+            destination: platform=iOS Simulator,name=iPhone 16
+          - destination_name: iPad
+            destination: platform=iOS Simulator,name=iPad Pro 11-inch (M4)
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Task and XcodeGen
+        run: brew install go-task xcodegen
+
+      - name: Generate project
+        run: task xcodegen
+
+      - name: Test
+        run: |
+          xcodebuild test \
+            -project SudokuApp/SudokuApp.xcodeproj \
+            -scheme SudokuApp \
+            -destination '${{ matrix.destination }}' \
+            CODE_SIGNING_ALLOWED=NO

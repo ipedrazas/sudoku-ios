@@ -60,3 +60,17 @@ fastlane/report.xml
 fastlane/Preview.html
 fastlane/screenshots/**/*.png
 fastlane/test_output
+
+# --- Sudoku and Cake ---
+
+# The Xcode project is generated from SudokuApp/project.yml by `task xcodegen`.
+# A hand-maintained .pbxproj is a merge-conflict generator and makes CI
+# reproducibility worse, so the generated project never enters the repo.
+*.xcodeproj
+*.xcworkspace
+
+.swiftpm/
+.DS_Store
+
+# Go build output from tools/export-fixtures
+tools/export-fixtures/export-fixtures

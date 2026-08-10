@@ -1,0 +1,105 @@
+included:
+  - SudokuKit/Sources
+  - SudokuKit/Tests
+  - SudokuApp/Sources
+  - SudokuApp/Tests
+  - SudokuWidgets
+
+excluded:
+  - .build
+  - SudokuApp/SudokuApp.xcodeproj
+
+disabled_rules:
+  # The rater and technique solver are direct ports of Go with nested loops over
+  # rows/cols/boxes. Flattening them to satisfy a nesting metric would make the
+  # port harder to diff against the original, which is the whole point.
+  - cyclomatic_complexity
+  - function_body_length
+  - type_body_length
+
+opt_in_rules:
+  - array_init
+  - closure_spacing
+  - collection_alignment
+  - contains_over_filter_count
+  - contains_over_first_not_nil
+  - empty_count
+  - empty_string
+  - explicit_init
+  - fatal_error_message
+  - first_where
+  - force_unwrapping
+  - implicitly_unwrapped_optional
+  - last_where
+  - literal_expression_end_indentation
+  - modifier_order
+  - multiline_parameters
+  - operator_usage_whitespace
+  - overridden_super_call
+  - prefer_self_type_over_type_of_self
+  - redundant_nil_coalescing
+  - sorted_first_last
+  - toggle_bool
+  - unneeded_parentheses_in_closure_argument
+  - unused_import
+  - yoda_condition
+
+trailing_comma:
+  # Agree with swift-format's TrailingComma rule rather than fighting it, and
+  # take the cleaner diffs that come with it.
+  mandatory_comma: true
+
+file_length:
+  # Techniques.swift is a faithful port of a 509-line Go file. Splitting it to
+  # satisfy a line budget would make it harder to diff against the original,
+  # which is the one thing keeping the port verifiable.
+  warning: 550
+  error: 700
+  ignore_comment_only_lines: true
+
+line_length:
+  warning: 120
+  error: 160
+  ignores_comments: false
+
+identifier_name:
+  # r, c, n, k, u, i, j are the Go source's names for row/col/digit/subset
+  # size/unit index. Keeping them makes the port reviewable line by line.
+  allowed_symbols: ["_"]
+  min_length: 1
+  excluded: [r, c, n, k, u, i, j, x, y, br, bc, rr, cc, r1, r2, c1, c2, id]
+
+nesting:
+  type_level: 2
+
+custom_rules:
+  # Dailies must be byte-identical on every device, forever. Any draw from the
+  # global RNG — or from a stdlib helper whose algorithm is not a documented,
+  # stable contract — would silently reshuffle everyone's daily history on some
+  # future Swift release. SudokuKit owns its shuffle and its bounded draw; see
+  # SeededRandom.swift.
+  no_global_random:
+    name: "No global RNG"
+    regex: '\.random\((?![^()]*using:)'
+    message: "Use SeededRandom: pass `using: &rng`. Puzzle generation must be reproducible."
+    severity: error
+
+  no_stdlib_shuffle:
+    name: "No stdlib shuffle"
+    regex: '\.shuffled?\(\s*\)'
+    message: "Use `deterministicShuffle(using:)`. Array.shuffle's algorithm is not a stable contract."
+    severity: error
+
+  no_random_element:
+    name: "No randomElement()"
+    regex: '\.randomElement\(\s*\)'
+    message: "Use SeededRandom-based selection. Puzzle generation must be reproducible."
+    severity: error
+
+  no_system_rng:
+    name: "No SystemRandomNumberGenerator"
+    regex: 'SystemRandomNumberGenerator'
+    message: "SudokuKit must never touch the system RNG; thread a SeededRandom through instead."
+    severity: error
+
+reporter: "xcode"
