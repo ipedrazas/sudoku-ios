@@ -71,7 +71,7 @@ tasks:
     status:
       - '{{.SKIP_APP}}' 
     cmds:
-      - xcodebuild build -project {{.APP_DIR}}/{{.SCHEME}}.xcodeproj -scheme {{.SCHEME}} -destination "$(./scripts/simulator-destination.sh iphone)"
+      - xcodebuild build -project {{.APP_DIR}}/{{.SCHEME}}.xcodeproj -scheme {{.SCHEME}} -destination "$(./scripts/simulator-destination.sh iphone)" CODE_SIGNING_ALLOWED=NO
 
   test:
     desc: Run all tests
@@ -96,8 +96,8 @@ tasks:
     status:
       - '{{.SKIP_APP}}' 
     cmds:
-      - xcodebuild test -project {{.APP_DIR}}/{{.SCHEME}}.xcodeproj -scheme {{.SCHEME}} -destination "$(./scripts/simulator-destination.sh iphone)"
-      - xcodebuild test -project {{.APP_DIR}}/{{.SCHEME}}.xcodeproj -scheme {{.SCHEME}} -destination "$(./scripts/simulator-destination.sh ipad)"
+      - xcodebuild test -project {{.APP_DIR}}/{{.SCHEME}}.xcodeproj -scheme {{.SCHEME}} -destination "$(./scripts/simulator-destination.sh iphone)" CODE_SIGNING_ALLOWED=NO
+      - xcodebuild test -project {{.APP_DIR}}/{{.SCHEME}}.xcodeproj -scheme {{.SCHEME}} -destination "$(./scripts/simulator-destination.sh ipad)" CODE_SIGNING_ALLOWED=NO
 
   bench:
     desc: Run the generation performance harness (Gate G1) and print the distribution

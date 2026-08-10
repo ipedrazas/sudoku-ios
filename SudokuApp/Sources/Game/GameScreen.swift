@@ -12,9 +12,11 @@ struct GameScreen: View {
     var onNewGame: () -> Void
 
     var body: some View {
-        VStack(spacing: 16) {
+        // Board near the top, controls in the bottom third — the thumb zone.
+        // §8.1 of the plan. Without the spacer the VStack centres everything,
+        // which left the board floating mid-screen and the pad out of easy reach.
+        VStack(spacing: 12) {
             BoardView(session: session)
-                .padding(.horizontal, 8)
 
             if session.isSolved {
                 Label("Solved", systemImage: "checkmark.seal.fill")
@@ -23,10 +25,12 @@ struct GameScreen: View {
                     .transition(.scale.combined(with: .opacity))
             }
 
+            Spacer(minLength: 0)
+
             NumberPad(session: session)
-                .padding(.horizontal, 8)
         }
-        .padding(.vertical, 8)
+        .padding(.horizontal, 12)
+        .padding(.top, 8)
         .animation(.snappy, value: session.isSolved)
         .navigationTitle(session.difficulty.name)
         .navigationBarTitleDisplayMode(.inline)

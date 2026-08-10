@@ -48,30 +48,40 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: dev.andcake.sudoku
-        INFOPLIST_KEY_UILaunchScreen_Generation: true
-        INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents: true
-        INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone: >-
-          UIInterfaceOrientationPortrait
-          UIInterfaceOrientationLandscapeLeft
-          UIInterfaceOrientationLandscapeRight
-        INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad: >-
-          UIInterfaceOrientationPortrait
-          UIInterfaceOrientationPortraitUpsideDown
-          UIInterfaceOrientationLandscapeLeft
-          UIInterfaceOrientationLandscapeRight
-        # Two puzzles side by side on iPad. Cheap, because GameSession is
-        # per-scene state and never a global singleton.
-        INFOPLIST_KEY_UIRequiresFullScreen: false
+    # These live in the plist itself, not as INFOPLIST_KEY_* build settings.
+    # Supplying an INFOPLIST_FILE turns GENERATE_INFOPLIST_FILE off, and the
+    # INFOPLIST_KEY_* settings only feed the *generated* plist — so they were
+    # accepted silently and dropped. The visible symptom was an app with no
+    # UILaunchScreen, which iOS runs letterboxed in compatibility mode: black
+    # bars top and bottom, and every layout squeezed into a smaller canvas.
     info:
       path: Resources/Info.plist
       properties:
         CFBundleDisplayName: Sudoku and Cake
         ITSAppUsesNonExemptEncryption: false
+        # An empty dictionary is enough to opt into the full screen.
+        UILaunchScreen: {}
+        UIApplicationSupportsIndirectInputEvents: true
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+        UISupportedInterfaceOrientations~ipad:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationPortraitUpsideDown
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+        # Two puzzles side by side on iPad. Cheap, because GameSession is
+        # per-scene state and never a global singleton.
+        UIRequiresFullScreen: false
 
   SudokuAppTests:
     type: bundle.unit-test
     platform: iOS
     sources: [Tests/SudokuAppTests]
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: true
     dependencies:
       - target: SudokuApp
       - package: SudokuKit
@@ -81,6 +91,9 @@ targets:
     type: bundle.ui-testing
     platform: iOS
     sources: [Tests/SudokuAppUITests]
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: true
     dependencies:
       - target: SudokuApp
 

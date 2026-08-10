@@ -19,7 +19,10 @@ struct RootView: View {
                 difficultyPicker
             }
         }
-        .task { provider.warmUp() }
+        .task {
+            provider.warmUp()
+            if let difficulty = Self.launchDifficulty { start(difficulty) }
+        }
     }
 
     private var difficultyPicker: some View {
@@ -69,6 +72,19 @@ struct RootView: View {
         case .hard: "and a little more"
         case .expert: "hidden pairs, X-wings"
         }
+    }
+
+    /// Lets a launch argument open straight into a game: `-startGame easy`.
+    ///
+    /// A development affordance, and a deliberate one. Screenshot and UI-test
+    /// runs otherwise have to drive the picker first, which is slow and makes
+    /// them fail for reasons that have nothing to do with what they are testing.
+    private static var launchDifficulty: Difficulty? {
+        let arguments = ProcessInfo.processInfo.arguments
+        guard let index = arguments.firstIndex(of: "-startGame"), index + 1 < arguments.count else {
+            return nil
+        }
+        return Difficulty(rawValue: arguments[index + 1])
     }
 
     private func start(_ difficulty: Difficulty) {
