@@ -8,7 +8,18 @@ import SwiftUI
 /// same information a move earlier, and it is what every competitive Sudoku app
 /// shows.
 struct NumberPad: View {
+    /// How the nine keys are arranged.
+    enum Layout {
+        /// One row of nine — the full width of a phone.
+        case row
+        /// Three by three. In a side column on iPad a single row would give each
+        /// key about 30 points, which is below the minimum touch target; the
+        /// grid also echoes the shape of a Sudoku box.
+        case grid
+    }
+
     @Bindable var session: GameSession
+    var layout: Layout = .row
 
     /// Same 450 ms as the board's long-press, for a one-shot note without
     /// leaving normal mode.
@@ -17,9 +28,23 @@ struct NumberPad: View {
     var body: some View {
         let remaining = session.remainingCounts
 
-        HStack(spacing: 5) {
-            ForEach(1...SudokuKit.Grid.size, id: \.self) { digit in
-                key(digit, remaining: remaining[digit] ?? 0)
+        switch layout {
+        case .row:
+            HStack(spacing: 5) {
+                ForEach(1...SudokuKit.Grid.size, id: \.self) { digit in
+                    key(digit, remaining: remaining[digit] ?? 0)
+                }
+            }
+        case .grid:
+            VStack(spacing: 8) {
+                ForEach(0..<3, id: \.self) { row in
+                    HStack(spacing: 8) {
+                        ForEach(1...3, id: \.self) { column in
+                            let digit = row * 3 + column
+                            key(digit, remaining: remaining[digit] ?? 0)
+                        }
+                    }
+                }
             }
         }
     }
@@ -40,7 +65,7 @@ struct NumberPad: View {
                     .foregroundStyle(.secondary)
             }
             .frame(maxWidth: .infinity)
-            .padding(.vertical, 8)
+            .padding(.vertical, layout == .grid ? 18 : 8)
             .background(
                 RoundedRectangle(cornerRadius: 10)
                     .fill(isArmed ? Color.accentColor.opacity(0.25) : Color(.secondarySystemBackground))

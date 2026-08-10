@@ -359,6 +359,70 @@ struct GameSessionTests {
         #expect(session.highlightedDigit == nil, "double-tapping again clears the highlight")
     }
 
+    // MARK: - Keyboard navigation
+
+    @Test("arrow movement starts at the top-left when nothing is selected")
+    func moveFromNoSelection() {
+        let session = session()
+        session.moveSelection(rowDelta: 1, colDelta: 0)
+        #expect(session.selection == CellRef(index: 0))
+    }
+
+    @Test("arrow movement walks the grid")
+    func moveSelection() {
+        let session = session()
+        session.select(CellRef(row: 4, col: 4))
+
+        session.moveSelection(rowDelta: -1, colDelta: 0)
+        #expect(session.selection == CellRef(row: 3, col: 4))
+
+        session.moveSelection(rowDelta: 0, colDelta: 1)
+        #expect(session.selection == CellRef(row: 3, col: 5))
+    }
+
+    @Test("movement clamps at the edges rather than wrapping")
+    func moveSelectionClamps() {
+        let session = session()
+
+        session.select(CellRef(row: 0, col: 0))
+        session.moveSelection(rowDelta: -1, colDelta: -1)
+        #expect(session.selection == CellRef(row: 0, col: 0), "the top-left corner should not wrap round")
+
+        session.select(CellRef(row: 8, col: 8))
+        session.moveSelection(rowDelta: 1, colDelta: 1)
+        #expect(session.selection == CellRef(row: 8, col: 8))
+    }
+
+    @Test("moving cancels blind mode")
+    func moveCancelsBlindMode() {
+        let session = session()
+        session.longPress(firstGiven(session))
+        #expect(session.isBlindMode)
+
+        session.moveSelection(rowDelta: 1, colDelta: 0)
+        #expect(!session.isBlindMode)
+    }
+
+    @Test("the highlight key acts on the selected cell")
+    func highlightFromKeyboard() {
+        let session = session()
+        let given = firstGiven(session)
+
+        session.select(given)
+        session.toggleHighlightOnSelection()
+        #expect(session.highlightedDigit == session.board[given])
+
+        session.toggleHighlightOnSelection()
+        #expect(session.highlightedDigit == nil)
+    }
+
+    @Test("the highlight key does nothing without a selection")
+    func highlightNeedsSelection() {
+        let session = session()
+        session.toggleHighlightOnSelection()
+        #expect(session.highlightedDigit == nil)
+    }
+
     // MARK: - Derived
 
     @Test("conflicts report both halves of a duplicate pair")

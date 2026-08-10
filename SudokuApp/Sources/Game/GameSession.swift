@@ -122,6 +122,27 @@ final class GameSession {
         selection = selection == cell ? nil : cell
     }
 
+    /// Moves the selection by a row/column delta, clamped to the board.
+    ///
+    /// Arrow-key navigation for iPad (§8.3), and the basis of the VoiceOver
+    /// rotor in Phase 9. Starts from the top-left when nothing is selected.
+    func moveSelection(rowDelta: Int, colDelta: Int) {
+        guard let current = selection else {
+            selection = CellRef(index: 0)
+            return
+        }
+        let row = min(max(current.row + rowDelta, 0), SudokuKit.Grid.size - 1)
+        let col = min(max(current.col + colDelta, 0), SudokuKit.Grid.size - 1)
+        selection = CellRef(row: row, col: col)
+        isBlindMode = false
+    }
+
+    /// Toggles the highlight on the selected cell's digit, for the keyboard.
+    func toggleHighlightOnSelection() {
+        guard let selection else { return }
+        doubleTap(selection)
+    }
+
     /// Long-press: masks the selected cell's row and column.
     ///
     /// Only meaningful on a filled cell, matching the web app

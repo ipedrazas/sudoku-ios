@@ -13,6 +13,7 @@ struct GameScreen: View {
     @State private var hint: Hint?
     @State private var hintLevel: HintLevel = .nudge
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.horizontalSizeClass) private var sizeClass
 
     /// One second, driving `session.tick`. The session keeps its own elapsed
     /// time rather than reading the clock, which is what makes it testable
@@ -20,25 +21,16 @@ struct GameScreen: View {
     private let clock = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
     var body: some View {
-        VStack(spacing: 12) {
-            header
-
-            // Board at the top, controls at the bottom (§8.1). Centring it
-            // instead only moved the dead band above the board rather than
-            // removing it, and cost the eye its anchor.
-            BoardView(session: session)
-
-            Spacer(minLength: 0)
-
-            if session.isSolved {
-                solvedBanner
+        Group {
+            if sizeClass == .regular {
+                regularLayout
+            } else {
+                compactLayout
             }
-
-            ControlBar(session: session, onHint: requestHint)
-            NumberPad(session: session)
         }
         .padding(.horizontal, 12)
         .padding(.top, 4)
+        .keyboardCommands(session: session, onHint: requestHint)
         .onReceive(clock) { _ in session.tick() }
         .animation(reduceMotion ? nil : .snappy, value: session.isSolved)
         .animation(reduceMotion ? nil : .easeOut(duration: 0.4), value: session.celebratingUnits)
@@ -49,6 +41,52 @@ struct GameScreen: View {
         .sheet(item: $hint) { hint in
             HintSheet(hint: hint, level: $hintLevel, session: session) { self.hint = nil }
         }
+    }
+
+    // MARK: - Layouts
+
+    /// iPhone portrait, and iPad in Slide Over or a narrow split.
+    ///
+    /// Board at the top, controls at the bottom (§8.1). Centring the board
+    /// instead only moved the dead band above it rather than removing it, and
+    /// cost the eye its anchor.
+    private var compactLayout: some View {
+        VStack(spacing: 12) {
+            header
+            BoardView(session: session)
+            Spacer(minLength: 0)
+            if session.isSolved { solvedBanner }
+            ControlBar(session: session, onHint: requestHint)
+            NumberPad(session: session, layout: .row)
+        }
+    }
+
+    /// iPad, and iPhone Max in landscape (§8.2).
+    ///
+    /// Stretching the compact layout to an iPad gives a board the size of a
+    /// dinner plate with the controls marooned at the bottom edge — a reach of
+    /// most of the screen between looking and tapping. Side by side keeps the
+    /// board at a readable size and the controls next to it.
+    private var regularLayout: some View {
+        HStack(alignment: .center, spacing: 32) {
+            BoardView(session: session)
+                .frame(maxWidth: 640)
+
+            // Sized to its content and centred against the board. Letting this
+            // column fill the height instead stranded the pad at the bottom
+            // edge, a screen away from the board it acts on.
+            VStack(spacing: 24) {
+                header
+                if session.isSolved { solvedBanner }
+                ControlBar(session: session, onHint: requestHint)
+                NumberPad(session: session, layout: .grid)
+            }
+            .frame(maxWidth: 340)
+        }
+        // Centred vertically: side by side leaves real vertical slack on an
+        // iPad in portrait, and pinning to the top pushed all of it below the
+        // content where it read as the screen being unfinished.
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
     }
 
     // MARK: - Pieces
