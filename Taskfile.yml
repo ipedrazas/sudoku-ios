@@ -23,8 +23,10 @@ vars:
   KIT_DIR: SudokuKit
   APP_DIR: SudokuApp
   SCHEME: SudokuApp
-  IPHONE_DEST: "platform=iOS Simulator,name=iPhone 16"
-  IPAD_DEST: "platform=iOS Simulator,name=iPad Pro 11-inch (M4)"
+  # Destinations are resolved at run time by scripts/simulator-destination.sh.
+  # Hardcoding device names does not survive an Xcode release: "iPhone 16" and
+  # "iPad Pro 11-inch (M4)" both vanished from the CI runner and failed the
+  # build before it compiled anything.
   # The web repo's generator package, source of the cross-check fixture.
   WEB_REPO: "../sudoku-and-cake"
   # App tasks need two things, not one: full Xcode *and* an app target that has
@@ -69,7 +71,7 @@ tasks:
     status:
       - '{{.SKIP_APP}}' 
     cmds:
-      - xcodebuild build -project {{.APP_DIR}}/{{.SCHEME}}.xcodeproj -scheme {{.SCHEME}} -destination '{{.IPHONE_DEST}}'
+      - xcodebuild build -project {{.APP_DIR}}/{{.SCHEME}}.xcodeproj -scheme {{.SCHEME}} -destination "$(./scripts/simulator-destination.sh iphone)"
 
   test:
     desc: Run all tests
@@ -94,8 +96,8 @@ tasks:
     status:
       - '{{.SKIP_APP}}' 
     cmds:
-      - xcodebuild test -project {{.APP_DIR}}/{{.SCHEME}}.xcodeproj -scheme {{.SCHEME}} -destination '{{.IPHONE_DEST}}'
-      - xcodebuild test -project {{.APP_DIR}}/{{.SCHEME}}.xcodeproj -scheme {{.SCHEME}} -destination '{{.IPAD_DEST}}'
+      - xcodebuild test -project {{.APP_DIR}}/{{.SCHEME}}.xcodeproj -scheme {{.SCHEME}} -destination "$(./scripts/simulator-destination.sh iphone)"
+      - xcodebuild test -project {{.APP_DIR}}/{{.SCHEME}}.xcodeproj -scheme {{.SCHEME}} -destination "$(./scripts/simulator-destination.sh ipad)"
 
   bench:
     desc: Run the generation performance harness (Gate G1) and print the distribution
@@ -135,7 +137,7 @@ tasks:
     desc: Build and run the app in the iPhone simulator (requires full Xcode and an app target)
     deps: [build:app]
     cmds:
-      - ./scripts/run-simulator.sh "{{.IPHONE_DEST}}"
+      - ./scripts/run-simulator.sh
 
   fixtures:
     desc: Regenerate the Go-to-Swift cross-check fixture from the web repo's generator
