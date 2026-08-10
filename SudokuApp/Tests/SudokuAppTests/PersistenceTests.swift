@@ -124,6 +124,35 @@ struct PersistenceTests {
         #expect(PencilCoding.decode(Data()) == nil)
     }
 
+    // MARK: - Lifetime
+
+    /// The bug that crashed the app at launch, as a test.
+    ///
+    /// A `ModelContext` does not keep its `ModelContainer` alive. The repository
+    /// originally stored only `container.mainContext`, so the container — a
+    /// local in whatever function built the repository — was released
+    /// immediately and the *next* fetch trapped. It presented as a bare
+    /// `SIGTRAP` at launch with no message and nothing in the log, so the cheap
+    /// guard is this: build a repository from a function that hands back nothing
+    /// else, then use it.
+    @Test("a repository outlives the container reference that built it")
+    func repositoryRetainsItsContainer() throws {
+        func detached() throws -> any GameRepository {
+            let container = try #require(SwiftDataRepository.container(inMemory: true))
+            return SwiftDataRepository(container: container)
+        }
+
+        let repository = try detached()
+
+        #expect(try repository.savedGames().isEmpty)
+        #expect(try repository.completions().isEmpty)
+        #expect(try repository.earnedAchievementKeys().isEmpty)
+
+        let puzzle = stored()
+        try repository.save(puzzle: puzzle)
+        #expect(try repository.puzzle(id: puzzle.id) == puzzle)
+    }
+
     // MARK: - Repository contract
 
     @Test("a puzzle round-trips", arguments: RepositoryKind.allCases)

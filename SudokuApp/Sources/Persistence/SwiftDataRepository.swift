@@ -13,9 +13,19 @@ import SwiftData
 /// something the type checker can actually verify.
 @MainActor
 final class SwiftDataRepository: GameRepository {
+    /// **The container is held here, and that is not incidental.**
+    ///
+    /// `ModelContext` does not keep its `ModelContainer` alive. An earlier
+    /// version stored only `container.mainContext`, so the container — a local
+    /// in the calling function — was released the moment the repository was
+    /// built, and the *next* fetch trapped on it. The symptom was an app that
+    /// died at launch with a bare `SIGTRAP` and no message, which is a long way
+    /// from the cause. Anything holding a context must hold its container.
+    private let container: ModelContainer
     private let context: ModelContext
 
     init(container: ModelContainer) {
+        self.container = container
         self.context = container.mainContext
     }
 
