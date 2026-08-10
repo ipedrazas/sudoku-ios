@@ -1,12 +1,14 @@
 #!/usr/bin/env bash
 # Build, install and launch the app in a simulator.
 #
+# Usage: run-simulator.sh [iphone|ipad]
+#
 # Every check happens before the simulator is booted: a script that opens a
 # simulator and then discovers it has nothing to install leaves you staring at a
 # blank home screen wondering what went wrong.
 set -euo pipefail
 
-DESTINATION="${1:-platform=iOS Simulator,name=iPhone 16}"
+FAMILY="${1:-iphone}"
 SCHEME="SudokuApp"
 PROJECT="SudokuApp/${SCHEME}.xcodeproj"
 
@@ -51,8 +53,11 @@ if [[ ! -d "${PROJECT}" ]]; then
     die "no Xcode project at ${PROJECT}. It is generated, not committed — run 'task xcodegen'."
 fi
 
-DEVICE_NAME="$(sed -n 's/.*name=\([^,]*\).*/\1/p' <<<"${DESTINATION}")"
-[[ -n "${DEVICE_NAME}" ]] || die "could not parse a device name out of '${DESTINATION}'"
+# Resolved rather than hardcoded: simulator model names change with every Xcode
+# release. See scripts/simulator-destination.sh.
+DESTINATION="$(./scripts/simulator-destination.sh "${FAMILY}")"
+DEVICE="${DESTINATION##*id=}"
+[[ -n "${DEVICE}" ]] || die "could not resolve a simulator for '${FAMILY}'"
 
 # --- Locate the built app ----------------------------------------------------
 #
@@ -85,13 +90,13 @@ APP_PATH="${BUILD_DIR}/${PRODUCT_NAME}"
 
 # --- Boot, install, launch ---------------------------------------------------
 
-echo "Booting ${DEVICE_NAME}…"
-xcrun simctl boot "${DEVICE_NAME}" 2>/dev/null || true  # already booted is fine
+echo "Booting ${FAMILY} simulator…"
+xcrun simctl boot "${DEVICE}" 2>/dev/null || true  # already booted is fine
 open -a Simulator
-xcrun simctl bootstatus "${DEVICE_NAME}" -b >/dev/null
+xcrun simctl bootstatus "${DEVICE}" -b >/dev/null
 
 echo "Installing ${APP_PATH}…"
-xcrun simctl install "${DEVICE_NAME}" "${APP_PATH}"
+xcrun simctl install "${DEVICE}" "${APP_PATH}"
 
 echo "Launching ${BUNDLE_ID}…"
-xcrun simctl launch --console-pty "${DEVICE_NAME}" "${BUNDLE_ID}"
+xcrun simctl launch --console-pty "${DEVICE}" "${BUNDLE_ID}"

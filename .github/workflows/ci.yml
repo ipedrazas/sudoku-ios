@@ -55,16 +55,15 @@ jobs:
   # From Phase 3 onward. iPad is not optional — it ships in v1, so it gets a
   # destination of its own rather than an assumption that compact width covers it.
   app:
-    name: App (${{ matrix.destination_name }})
+    name: App (${{ matrix.family }})
     runs-on: macos-latest
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - destination_name: iPhone
-            destination: platform=iOS Simulator,name=iPhone 16
-          - destination_name: iPad
-            destination: platform=iOS Simulator,name=iPad Pro 11-inch (M4)
+        # Family, not a device name: the runner's simulator line-up changes
+        # with every Xcode release, and pinning a model failed the build before
+        # it compiled anything.
+        family: [iphone, ipad]
     steps:
       - uses: actions/checkout@v4
 
@@ -95,5 +94,5 @@ jobs:
           xcodebuild test \
             -project SudokuApp/SudokuApp.xcodeproj \
             -scheme SudokuApp \
-            -destination '${{ matrix.destination }}' \
+            -destination "$(./scripts/simulator-destination.sh ${{ matrix.family }})" \
             CODE_SIGNING_ALLOWED=NO
