@@ -15,6 +15,11 @@ vars:
     sh: 'test -d /Library/Developer/CommandLineTools/Library/Developer/Frameworks && ! xcodebuild -version >/dev/null 2>&1 && echo /Library/Developer/CommandLineTools/Library/Developer/Frameworks || true'
   CLT_INTEROP: /Library/Developer/CommandLineTools/Library/Developer/usr/lib
   TEST_FLAGS: '{{if .CLT_FRAMEWORKS}}-Xswiftc -F -Xswiftc {{.CLT_FRAMEWORKS}} -Xlinker -rpath -Xlinker {{.CLT_FRAMEWORKS}} -Xlinker -rpath -Xlinker {{.CLT_INTEROP}}{{end}}'
+  # Only the trees that exist: SudokuWidgets arrives in Phase 8, and passing a
+  # missing path to swift-format currently happens to be harmless rather than
+  # guaranteed to be.
+  SOURCE_DIRS:
+    sh: 'for d in SudokuKit SudokuApp SudokuWidgets; do if [ -d "$d" ]; then printf "%s " "$d"; fi; done'
   KIT_DIR: SudokuKit
   APP_DIR: SudokuApp
   SCHEME: SudokuApp
@@ -108,12 +113,12 @@ tasks:
   format:
     desc: Format Swift sources in place
     cmds:
-      - swift-format format --in-place --recursive --configuration .swift-format SudokuKit SudokuApp SudokuWidgets
+      - swift-format format --in-place --recursive --configuration .swift-format {{.SOURCE_DIRS}}
 
   format:check:
     desc: Check formatting without writing
     cmds:
-      - swift-format lint --recursive --strict --configuration .swift-format SudokuKit SudokuApp SudokuWidgets
+      - swift-format lint --recursive --strict --configuration .swift-format {{.SOURCE_DIRS}}
 
   xcodegen:
     desc: Regenerate the Xcode project from project.yml

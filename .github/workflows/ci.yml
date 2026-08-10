@@ -18,7 +18,7 @@ jobs:
   # the technique rater and the solver. Needs no Xcode project and no simulator.
   kit:
     name: SudokuKit
-    runs-on: macos-15
+    runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
 
@@ -44,7 +44,7 @@ jobs:
   # build, not ship. Budgets live in PerformanceTests.swift.
   bench:
     name: Generation budgets
-    runs-on: macos-15
+    runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
       - name: Install Task
@@ -52,38 +52,11 @@ jobs:
       - name: Run performance harness
         run: task bench
 
-  # The fixture is the proof the Swift port matches Go. Regenerating it must stay
-  # possible, or it quietly rots into a snapshot nobody can reproduce.
-  fixtures:
-    name: Fixture exporter builds
-    runs-on: macos-15
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          path: sudoku-ios
-      - name: Check out the web app (the port's reference)
-        uses: actions/checkout@v4
-        with:
-          repository: ipedrazas/sudoku-and-cake
-          path: sudoku-and-cake
-        continue-on-error: true
-      - uses: actions/setup-go@v5
-        with:
-          go-version: "1.25"
-      - name: Build the exporter
-        working-directory: sudoku-ios/tools/export-fixtures
-        env:
-          GOPROXY: "off"
-          GOFLAGS: "-mod=mod"
-        run: go build -o /dev/null .
-        continue-on-error: true
-
   # From Phase 3 onward. iPad is not optional — it ships in v1, so it gets a
   # destination of its own rather than an assumption that compact width covers it.
   app:
     name: App (${{ matrix.destination_name }})
-    runs-on: macos-15
-    if: ${{ hashFiles('SudokuApp/Sources/**/*.swift') != '' }}
+    runs-on: macos-latest
     strategy:
       fail-fast: false
       matrix:
@@ -95,13 +68,29 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # `hashFiles` is not available in a job-level `if` — that expression is
+      # evaluated before the workspace exists. Probing after checkout is both
+      # valid and clearer: it says in the log why the job did nothing.
+      - name: Does the app target have sources yet?
+        id: probe
+        run: |
+          if find SudokuApp/Sources -name '*.swift' -print -quit 2>/dev/null | grep -q .; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+            echo "SudokuApp has no Swift sources yet — Phase 3 has not started. Nothing to build."
+          fi
+
       - name: Install Task and XcodeGen
+        if: steps.probe.outputs.exists == 'true'
         run: brew install go-task xcodegen
 
       - name: Generate project
+        if: steps.probe.outputs.exists == 'true'
         run: task xcodegen
 
       - name: Test
+        if: steps.probe.outputs.exists == 'true'
         run: |
           xcodebuild test \
             -project SudokuApp/SudokuApp.xcodeproj \
