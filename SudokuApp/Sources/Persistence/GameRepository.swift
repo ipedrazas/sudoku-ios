@@ -43,7 +43,12 @@ protocol GameRepository: AnyObject {
 
     // MARK: Achievements
 
-    func earnedAchievementKeys() throws -> Set<String>
+    /// Every unlocked achievement, with when it was earned.
+    ///
+    /// The date is the primitive rather than the key set: the achievements grid
+    /// shows *when*, and a set cannot be widened into a dictionary later without
+    /// touching every implementation.
+    func achievementUnlocks() throws -> [String: Date]
     /// Unlocks keys that are not already unlocked. Idempotent.
     func unlock(achievementKeys keys: [String], at date: Date) throws
 
@@ -58,6 +63,11 @@ extension GameRepository {
     /// Completions in the shape `StatsAggregator` and `Streak` consume.
     func completionRecords() throws -> [CompletionRecord] {
         try completions().map(\.record)
+    }
+
+    /// Which achievements are unlocked, when the dates do not matter.
+    func earnedAchievementKeys() throws -> Set<String> {
+        Set(try achievementUnlocks().keys)
     }
 }
 
@@ -125,8 +135,8 @@ final class InMemoryGameRepository: GameRepository {
         history
     }
 
-    func earnedAchievementKeys() throws -> Set<String> {
-        Set(achievements.keys)
+    func achievementUnlocks() throws -> [String: Date] {
+        achievements
     }
 
     func unlock(achievementKeys keys: [String], at date: Date) throws {

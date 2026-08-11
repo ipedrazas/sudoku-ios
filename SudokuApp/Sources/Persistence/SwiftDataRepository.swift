@@ -131,9 +131,15 @@ final class SwiftDataRepository: GameRepository {
 
     // MARK: - Achievements
 
-    func earnedAchievementKeys() throws -> Set<String> {
+    func achievementUnlocks() throws -> [String: Date] {
         let records = try context.fetch(FetchDescriptor<AchievementRecord>())
-        return Set(records.compactMap(\.key))
+        return records.reduce(into: [:]) { result, record in
+            guard let key = record.key else { return }
+            // Keep the earliest: unlocking is idempotent, but a duplicated row
+            // should not make an achievement look newer than it is.
+            let unlockedAt = record.unlockedAt ?? Date()
+            result[key] = min(result[key] ?? unlockedAt, unlockedAt)
+        }
     }
 
     func unlock(achievementKeys keys: [String], at date: Date) throws {
