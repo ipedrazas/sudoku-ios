@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!--
+	  The widget gets its own manifest rather than inheriting the app's: Apple
+	  aggregates these per bundle, and an extension without one is an extension
+	  making no declaration at all.
+
+	  It is emptier than the app's, and that is the point. The widget reads one
+	  JSON file out of the App Group container and draws it. No UserDefaults, no
+	  file timestamps, no disk-space checks, no network — so there is no
+	  required-reason API to declare.
+	-->
+
+	<key>NSPrivacyTracking</key>
+	<false/>
+
+	<key>NSPrivacyTrackingDomains</key>
+	<array/>
+
+	<key>NSPrivacyCollectedDataTypes</key>
+	<array/>
+
+	<key>NSPrivacyAccessedAPITypes</key>
+	<array/>
+</dict>
+</plist>

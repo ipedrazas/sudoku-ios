@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!--
+	  The whole manifest, and every claim in it is trivially true rather than
+	  carefully worded: this app has no accounts, no server, no analytics and no
+	  network code of any kind. Nothing it knows about a player exists anywhere
+	  but on their device, which is a decision (§12.3 of the implementation
+	  plan) and not an accident — free, no ads, no IAP, so there is nothing to
+	  fund by collecting anything.
+	-->
+
+	<key>NSPrivacyTracking</key>
+	<false/>
+
+	<!-- Nothing is contacted, so nothing is listed. -->
+	<key>NSPrivacyTrackingDomains</key>
+	<array/>
+
+	<!-- No data of any category leaves the device, so none is declared. -->
+	<key>NSPrivacyCollectedDataTypes</key>
+	<array/>
+
+	<key>NSPrivacyAccessedAPITypes</key>
+	<array>
+		<!--
+		  The only required-reason API the app touches. `AppSettings` keeps the
+		  player's preferences in UserDefaults.standard — theme, input mode,
+		  haptics, the reminder hour — which is CA92.1: information accessible
+		  only to this app, never sent off the device.
+
+		  It is deliberately not 1C8F.1. That reason is for defaults shared
+		  through an App Group, and although this app has an App Group, it uses
+		  it for a single JSON file the widget reads, not for defaults.
+		-->
+		<dict>
+			<key>NSPrivacyAccessedAPIType</key>
+			<string>NSPrivacyAccessedAPICategoryUserDefaults</string>
+			<key>NSPrivacyAccessedAPITypeReasons</key>
+			<array>
+				<string>CA92.1</string>
+			</array>
+		</dict>
+	</array>
+</dict>
+</plist>

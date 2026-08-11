@@ -7,6 +7,18 @@
 # they cannot tell you a board is rendering at half width with clipped digits,
 # which is exactly what six green CI runs failed to notice and one screenshot
 # caught immediately.
+#
+# Environment:
+#   SCREENSHOT_DELAY    seconds to wait before capturing (default 3)
+#   CONTENT_SIZE        a Dynamic Type category, e.g.
+#                       accessibility-extra-extra-extra-large
+#   APPEARANCE          light | dark
+#
+# CONTENT_SIZE is how Phase 9's P9-3 was actually checked, and it is worth
+# re-running whenever a layout changes: at the largest category the control bar
+# broke "Undo" across two lines into the icon above it, and the win card
+# squeezed its buttons into "Ne w…" and "Re- view…". Neither is visible at any
+# other size, and no test would have caught either.
 set -euo pipefail
 
 OUTPUT="${1:?usage: screenshot.sh <output.png> [iphone|ipad] [launch-args…]}"
@@ -30,6 +42,15 @@ APP_PATH="$(setting TARGET_BUILD_DIR)/$(setting FULL_PRODUCT_NAME)"
 
 xcrun simctl boot "${DEVICE}" 2>/dev/null || true
 xcrun simctl bootstatus "${DEVICE}" -b >/dev/null
+
+# Applied before launch, so the app reads them at its first layout rather than
+# re-laying out mid-capture.
+if [[ -n "${CONTENT_SIZE:-}" ]]; then
+    xcrun simctl ui "${DEVICE}" content_size "${CONTENT_SIZE}" >/dev/null
+fi
+if [[ -n "${APPEARANCE:-}" ]]; then
+    xcrun simctl ui "${DEVICE}" appearance "${APPEARANCE}" >/dev/null
+fi
 
 # Terminate first: relaunching a live app would keep its old state, and a stale
 # screenshot is worse than no screenshot.

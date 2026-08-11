@@ -134,6 +134,31 @@ Pure logic, `Sendable` throughout, value types. Ported from the Go backend:
 7. **No OCR / photo import.** Tried twice in the web app and removed; manual
    entry replaced it. Do not reintroduce it.
 
+## Accessibility
+
+Phase 9 landed these, and they are easy to undo by accident.
+
+1. **The board says in words whatever it says in colour.** Conflicts and hint
+   cells are in the VoiceOver label because a sighted player can see them.
+   `BoardAccessibility` is deliberately outside `BoardView` so the words are
+   testable — a VoiceOver regression is invisible to whoever reviews the change.
+2. **Colour is never the only signal**, and the shapes differ from each other:
+   conflict → underline, complete unit → solid border, full-but-wrong unit →
+   *dashed* border. The last pair differ only in correctness, so the difference
+   has to survive greyscale.
+3. **Anything gated on `showsConflicts` is gated everywhere.** Mistake
+   highlighting is opt-in; the label, the conflicts rotor and the conflict
+   haptic all stay silent when it is off. One setting, one meaning, whether or
+   not you can see the screen.
+4. **Check large Dynamic Type by looking at it.** `CONTENT_SIZE=accessibility-extra-extra-extra-large ./scripts/screenshot.sh out.png`
+   renders a layout no test can judge. Both P9-3 defects — a control bar wrapping
+   "Undo" into its own icon, a win card squeezing buttons into "Ne w…" — were
+   invisible at every other size.
+5. **Don't put secondary text on a material inside a `ScrollView`.** Hierarchical
+   styles resolve against their backdrop, and that combination resolves to no
+   contrast at all: the text takes up its space and draws nothing, in both light
+   and dark. The win card uses an opaque surface for exactly this reason.
+
 ## Testing
 
 Swift Testing (not XCTest) for SudokuKit. Go test tables are ported directly.

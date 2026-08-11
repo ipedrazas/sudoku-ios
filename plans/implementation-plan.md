@@ -1183,15 +1183,67 @@ asset and seeing it degrade rather than crash.
 
 ### Phase 9 — Accessibility and release · 3 days
 
-| ID | Task |
-|---|---|
-| P9-1 | VoiceOver over the grid: "row 3, column 5, empty" / "…contains 7, given" |
-| P9-2 | Custom rotor for row/column/box navigation |
-| P9-3 | Dynamic Type to XXL with no clipping, at every layout |
-| P9-4 | Reduce Motion honoured for celebrations |
-| P9-5 | Colour-blind-safe conflict and completion indication (never colour alone) |
-| P9-6 | `PrivacyInfo.xcprivacy` declaring no tracking and no data collection |
-| P9-7 | Screenshots (iPhone **and** iPad), metadata, TestFlight build |
+| ID | Task | State |
+|---|---|---|
+| P9-1 | VoiceOver over the grid: "row 3, column 5, empty" / "…contains 7, given" | done |
+| P9-2 | Custom rotor for row/column/box navigation | done — five rotors |
+| P9-3 | Dynamic Type to XXL with no clipping, at every layout | done — iPhone verified; iPad regular width not |
+| P9-4 | Reduce Motion honoured for celebrations | done |
+| P9-5 | Colour-blind-safe conflict and completion indication (never colour alone) | done |
+| P9-6 | `PrivacyInfo.xcprivacy` declaring no tracking and no data collection | done — app and widget |
+| P9-7 | Screenshots (iPhone **and** iPad), metadata, TestFlight build | **partial** — see below |
+
+*Done when:* the grid is playable with VoiceOver without swiping through 81
+cells, nothing clips at the largest Dynamic Type, and every state the board
+shows in colour is also shown in a shape.
+
+**Dynamic Type found two defects that no test could.** At
+`accessibility-extra-extra-extra-large` the control bar broke "Undo" into "Und /
+o" and "Erase" into "Eras / e", with the wrapped halves colliding with the icons
+above them; and the win card squeezed its two buttons into "Ne w…" and "Re-
+view…" while truncating every achievement to "Easy St…". Both are invisible at
+every other size. The captions come off the control bar at accessibility sizes —
+`accessibilityLabel` still carries the word — and the win card stacks its
+buttons and scrolls its summary.
+
+**Scrolling the win card hid its own way out.** The first fix wrapped the whole
+card in a `ScrollView`, which stopped the overflow by pushing "New game" below
+the fold: a celebration you have to discover how to dismiss. The buttons are now
+pinned outside the scrolling part.
+
+**The material was eating the labels.** "Time", "Difficulty" and every
+achievement detail took up their space and drew nothing — in light mode *and*
+dark, which is why it survived being diagnosed first as a layout bug and then as
+a colour one. Secondary foreground styles resolve against the backdrop they sit
+on, and over `.regularMaterial` inside a `ScrollView` they resolved to no
+contrast at all. The card is opaque now; the blur was decoration and the labels
+are the content.
+
+**Colour is never alone, and the shapes differ from each other.** A conflict
+gets an underline, a completed unit a solid border, a full-but-wrong unit a
+*dashed* one. The last distinction is the one that matters: both say "this unit
+is full" and differ only in whether it is right, so that difference has to
+survive greyscale.
+
+**Reduce Motion was turning two bounces into one, not none.** `symbolEffect`'s
+`options:` chooses how many times to repeat; `isActive:` is the one that means
+"do not". The confetti now holds a still frame rather than disappearing — Reduce
+Motion asks for less movement, not for less celebration.
+
+**Verified by running:** 63 assertions over the publisher, rollover, store, deep
+links, events and the VoiceOver labels, as a macOS binary against these sources;
+and every screen captured on iPhone at default *and*
+`accessibility-extra-extra-extra-large`, in light and dark, via
+`simctl ui content_size`.
+
+**Not done, and handed over:** the TestFlight build, the real App Store
+screenshots, and registering the App Group in the developer portal. All three
+need `xcodebuild` or App Store Connect, neither of which is reachable from the
+sandbox this was built in. The listing text, privacy answers and review notes
+are written down in `plans/store-listing.md` so the only thing left is the
+upload itself. iPad at the largest type size in *regular* width also remains
+unverified: iPadOS 26 launches the app windowed in the simulator, so what was
+captured there is the compact layout again.
 
 **Total: ~5–6 focused weeks** to a submittable universal v1 (the strategy doc's
 4–5 weeks plus D1/D2).
