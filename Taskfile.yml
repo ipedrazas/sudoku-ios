@@ -114,6 +114,27 @@ tasks:
     cmds:
       - swift test {{.SWIFT_FLAGS}} {{.TEST_FLAGS}} -c release --filter PerformanceTests
 
+  # Release tasks deliberately have no `status: SKIP_APP` guard. Every other app
+  # task skips itself when Xcode is absent, which is right for a developer
+  # machine that only builds the kit — but a release that silently does nothing
+  # and exits 0 is the worst possible outcome, so these fail instead.
+  #
+  # See plans/releasing.md; both need a real shell, not the nono sandbox.
+  archive:
+    desc: Build a signed Release archive for the App Store (requires Xcode and a distribution certificate)
+    deps: [xcodegen]
+    cmds:
+      # No CODE_SIGNING_ALLOWED=NO here, unlike every simulator task above:
+      # an unsigned archive cannot be uploaded.
+      - xcodebuild archive -project {{.APP_DIR}}/{{.SCHEME}}.xcodeproj -scheme {{.SCHEME}} -configuration Release -destination 'generic/platform=iOS' -archivePath build/{{.SCHEME}}.xcarchive -allowProvisioningUpdates
+      - ./scripts/verify-archive.sh build/{{.SCHEME}}.xcarchive
+
+  export:
+    desc: Export an uploadable .ipa from the archive
+    cmds:
+      - xcodebuild -exportArchive -archivePath build/{{.SCHEME}}.xcarchive -exportPath build/export -exportOptionsPlist {{.APP_DIR}}/ExportOptions.plist -allowProvisioningUpdates
+      - echo "Wrote build/export — see plans/releasing.md §6 to upload."
+
   typecheck:
     desc: Type-check app and widget sources against the simulator SDK (no Xcode build needed)
     cmds:

@@ -107,19 +107,32 @@ claim, including the one required-reason API (`UserDefaults`, CA92.1).
 
 ## Screenshots
 
-Required: 6.9" iPhone and 13" iPad. The App Store accepts one set per device
-class and scales down, so those two sizes cover every device.
+Required: **6.9" iPhone (1320×2868)** and, because the app ships universal
+(`deviceFamily: [1, 2]`), **13" iPad (2064×2752)**. The App Store accepts one
+set per device class and scales down, so those two sizes cover every device.
+
+Five are captured in `screenshots/`, and they are the right *shots*:
 
 | # | Screen | Caption |
 |---|---|---|
-| 1 | A board mid-solve | Solvable by logic alone |
-| 2 | A hint sheet naming a technique | Hints that teach, not hints that tell |
-| 3 | The daily and its streak | A new puzzle every day |
-| 4 | Stats and the year heatmap | Watch yourself get better |
-| 5 | Home Screen with widgets | Today's puzzle, at a glance |
+| 1 | Home — daily, resume, the difficulty ladder | Every puzzle solvable by logic alone |
+| 2 | A board mid-solve with pencil marks | Notes, hints and undo where you expect them |
+| 3 | A hint naming the technique | Hints that teach, not hints that tell |
+| 4 | Settings | It plays the way you want it to |
+| 5 | The win card with achievements | Solved — and it remembers |
 
-Capture with `scripts/screenshot.sh`, which drives `ScreenshotTests` through
-`xcodebuild` — so, like the upload, it has to be run outside the sandbox.
+**They are the wrong size.** All five are 1206×2622, which is the 6.3" iPhone 17
+Pro, not the 6.9" App Store Connect asks for. And there is no iPad set at all.
+Both need recapturing before submission:
+
+| Device | Simulator | Produces |
+|---|---|---|
+| 6.9" iPhone | iPhone 17 Pro Max | 1320×2868 ✅ verified |
+| 13" iPad | iPad Pro 13-inch | 2064×2752 ✅ verified |
+
+Capture with `scripts/screenshot.sh`, which drives the app through `xcodebuild`
+— so, like the upload, it has to be run outside the sandbox. It takes
+`CONTENT_SIZE` and `APPEARANCE` if a large-type or dark variant is wanted.
 
 ## What is not here, and why
 

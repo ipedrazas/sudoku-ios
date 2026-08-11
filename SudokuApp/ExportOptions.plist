@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!--
+	  How `xcodebuild -exportArchive` turns the .xcarchive into something
+	  uploadable. See plans/releasing.md for the commands that use it.
+
+	  `app-store-connect` is the current spelling; Xcode called it `app-store`
+	  before 15.3 and still accepts that name with a deprecation warning. If a
+	  future Xcode rejects this value, `xcodebuild -help` lists what it takes.
+	-->
+	<key>method</key>
+	<string>app-store-connect</string>
+
+	<key>teamID</key>
+	<string>TQ86N6HVWY</string>
+
+	<!--
+	  Automatic, matching the project: signing style is set once in
+	  project.yml (CODE_SIGN_STYLE) and this has to agree with it. With
+	  `-allowProvisioningUpdates` on the export command, Xcode creates the
+	  distribution certificate and the App Store profiles for both the app and
+	  the widget extension without either being made by hand.
+	-->
+	<key>signingStyle</key>
+	<string>automatic</string>
+
+	<!--
+	  Writes the .ipa to disk rather than uploading it. Deliberate: an upload
+	  that happens as a side effect of an export is hard to inspect and
+	  impossible to repeat, and the first upload of a new app is worth looking
+	  at before it goes. Change to `upload` once the process is boring.
+	-->
+	<key>destination</key>
+	<string>export</string>
+
+	<!--
+	  Symbols go with the build, so App Store Connect can symbolicate crash
+	  reports. There is no third-party analytics in this app, so this is the
+	  only way a crash ever becomes readable.
+	-->
+	<key>uploadSymbols</key>
+	<true/>
+
+	<!--
+	  App thinning is left off: `<none>` ships one universal binary. The app is
+	  a few megabytes and has no large assets, so variant builds would add
+	  process for no download saving worth measuring.
+	-->
+	<key>thinning</key>
+	<string>&lt;none&gt;</string>
+</dict>
+</plist>
