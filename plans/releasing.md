@@ -122,6 +122,21 @@ Three details that matter:
 The widget extension is built and embedded automatically: the app target depends
 on `SudokuWidgets`, so archiving the app archives both.
 
+### The archive is signed for development, and that is correct
+
+`xcodebuild archive` with automatic signing embeds an *iOS Team Provisioning
+Profile* — `get-task-allow` true, a list of your devices — and signs with
+**Apple Development**. That is not a misconfiguration and there is nothing to
+fix. The archive is an intermediate; `-exportArchive` re-signs the payload with
+the distribution certificate and an App Store profile in §5.
+
+Worth stating because the opposite assumption is easy to make and wastes an
+afternoon: an earlier version of `verify-archive.sh` failed the archive for
+being development-signed and blocked a build that was completely fine.
+
+The distribution requirement is therefore checked on the **.ipa**, which is what
+gets uploaded, and only reported on the archive.
+
 ### Check the archive before exporting
 
 Two things are worth confirming, because both fail silently and both are

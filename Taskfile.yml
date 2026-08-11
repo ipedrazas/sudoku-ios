@@ -133,6 +133,10 @@ tasks:
     desc: Export an uploadable .ipa from the archive
     cmds:
       - xcodebuild -exportArchive -archivePath build/{{.SCHEME}}.xcarchive -exportPath build/export -exportOptionsPlist {{.APP_DIR}}/ExportOptions.plist -allowProvisioningUpdates
+      # The same checks again, on the artefact that actually gets uploaded. Not
+      # redundant: export re-signs everything, so this is the first and only
+      # point at which the distribution certificate can be confirmed.
+      - ./scripts/verify-archive.sh build/export/{{.SCHEME}}.ipa
       - echo "Wrote build/export — see plans/releasing.md §6 to upload."
 
   typecheck:
