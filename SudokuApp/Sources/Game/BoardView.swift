@@ -10,6 +10,9 @@ struct BoardView: View {
     /// Porting the timings keeps the feel identical for anyone who plays both.
     private static let longPressDuration = 0.45
 
+    /// Ties the rotor entries below to the cells they point at.
+    @Namespace private var cells
+
     var body: some View {
         VStack(spacing: 0) {
             ForEach(0..<SudokuKit.Grid.size, id: \.self) { row in
@@ -30,7 +33,47 @@ struct BoardView: View {
         )
         .accessibilityElement(children: .contain)
         .accessibilityLabel("Sudoku board")
+        // Ordered by how often each is wanted: what is left to do first, what is
+        // wrong second, then the structural jumps.
+        .accessibilityRotor("Empty cells") {
+            ForEach(session.board.emptyCells, id: \.index) { cell in
+                AccessibilityRotorEntry(BoardAccessibility.rotorLabel(for: cell), cell.index, in: cells)
+            }
+        }
+        // Only populated when the player asked to be told about mistakes:
+        // `session.conflicts` is empty when the setting is off, so a rotor
+        // listing them cannot hand back what they turned it off to avoid.
+        .accessibilityRotor("Conflicts") {
+            ForEach(BoardAccessibility.sortedConflicts(in: session), id: \.index) { cell in
+                AccessibilityRotorEntry(BoardAccessibility.rotorLabel(for: cell), cell.index, in: cells)
+            }
+        }
+        .accessibilityRotor("Rows") {
+            ForEach(0..<SudokuKit.Grid.size, id: \.self) { row in
+                AccessibilityRotorEntry("Row \(row + 1)", CellRef(row: row, col: 0).index, in: cells)
+            }
+        }
+        .accessibilityRotor("Columns") {
+            ForEach(0..<SudokuKit.Grid.size, id: \.self) { column in
+                AccessibilityRotorEntry("Column \(column + 1)", CellRef(row: 0, col: column).index, in: cells)
+            }
+        }
+        .accessibilityRotor("Boxes") {
+            ForEach(0..<SudokuKit.Grid.size, id: \.self) { box in
+                AccessibilityRotorEntry("Box \(box + 1)", BoardAccessibility.firstCell(ofBox: box).index, in: cells)
+            }
+        }
     }
+
+    // MARK: - Rotors
+
+    // Ways through the grid other than one cell at a time.
+    //
+    // Swiping through 81 cells to reach the one you want is not navigation, it
+    // is endurance — and a Sudoku player does not think in reading order anyway.
+    // They think "the middle box", "the row I am filling", "where are the empty
+    // ones". The rotors above are the equivalent of what a sighted player does
+    // with their eyes in a fraction of a second.
 
     // MARK: - Cells
 
@@ -52,6 +95,8 @@ struct BoardView: View {
         .frame(maxWidth: .infinity)
         .aspectRatio(1, contentMode: .fit)
         .overlay(cellBorder)
+        .overlay(state.conflictUnderline)
+        .overlay(state.unitOutline)
         .overlay(state.hintOutline)
         .overlay(selectionRing(isSelected: state.isSelected))
         // Blind mode masks the contents but keeps the cell tappable: the point
@@ -63,10 +108,13 @@ struct BoardView: View {
         .onTapGesture { session.select(cell) }
         .onLongPressGesture(minimumDuration: Self.longPressDuration) { session.longPress(cell) }
         .accessibilityElement()
-        .accessibilityLabel(label(cell: cell, value: value, isGiven: state.isGiven))
+        .accessibilityLabel(BoardAccessibility.label(for: cell, in: session))
         .accessibilityIdentifier("cell.\(cell.index)")
         .accessibilityAddTraits(state.isSelected ? [.isSelected, .isButton] : [.isButton])
         .accessibilityAction { session.select(cell) }
+        // What the rotors above point at. Without this the entries resolve to
+        // nothing and the rotor silently does not appear.
+        .accessibilityRotorEntry(id: cell.index, in: cells)
     }
 
     private var cellBorder: some View {
@@ -96,19 +144,6 @@ struct BoardView: View {
         .allowsHitTesting(false)
     }
 
-    /// VoiceOver reads position first, then contents — a player navigating the
-    /// grid needs to know where they are before what is there. A rotor for
-    /// row/column/box navigation follows in Phase 9 (P9-1).
-    private func label(cell: CellRef, value: Int, isGiven: Bool) -> String {
-        let position = "row \(cell.row + 1), column \(cell.col + 1)"
-        if value != 0 { return "\(position), \(value)\(isGiven ? ", given" : "")" }
-
-        let notes = Candidates.digits(session.notes(at: cell))
-        guard notes.isEmpty else {
-            return "\(position), notes \(notes.map(String.init).joined(separator: ", "))"
-        }
-        return "\(position), empty"
-    }
 }
 
 // MARK: - Cell state
@@ -169,12 +204,58 @@ private struct CellState {
         }
     }
 
-    /// Colour is never the only signal — the cell a hint is about also gets an
-    /// outline, so it is findable without seeing yellow.
+    /// Colour is never the only signal.
+    ///
+    /// Roughly one man in twelve cannot separate the red of a conflict from the
+    /// green of a completed unit, and both are drawn over the same board at the
+    /// same time. So every state that means something carries a shape as well as
+    /// a colour, and the shapes are chosen to be distinguishable from each other
+    /// rather than merely present:
+    ///
+    /// | State | Colour | Shape |
+    /// |---|---|---|
+    /// | conflict | red | underline beneath the digit |
+    /// | complete unit | green | full border |
+    /// | full but wrong | orange | dashed border |
+    /// | hint subject | yellow | rounded outline |
+    ///
+    /// Selection has its own ring already, and the digit highlight is a
+    /// convenience rather than a claim about correctness, so neither needs one.
     @ViewBuilder var hintOutline: some View {
         if isHintSubject {
             RoundedRectangle(cornerRadius: 3)
                 .strokeBorder(Color.orange, lineWidth: 2)
+        }
+    }
+
+    /// A complete unit is bordered; a full-but-wrong one is bordered in dashes.
+    ///
+    /// A dash pattern rather than a second colour, because the two states are
+    /// adjacent in meaning — both say "this unit is full" — and differ only in
+    /// whether it is right. That difference has to survive being seen in
+    /// greyscale.
+    @ViewBuilder var unitOutline: some View {
+        if isCelebrating {
+            Rectangle()
+                .strokeBorder(Color.green, lineWidth: 1.5)
+        } else if isIncorrect {
+            Rectangle()
+                .strokeBorder(Color.orange, style: StrokeStyle(lineWidth: 1.5, dash: [3, 2]))
+        }
+    }
+
+    /// The conflict underline, drawn under the digit rather than around the cell
+    /// so it cannot be confused with the unit borders above.
+    @ViewBuilder var conflictUnderline: some View {
+        if isConflict {
+            VStack {
+                Spacer()
+                Rectangle()
+                    .fill(Color.red)
+                    .frame(height: 2)
+                    .padding(.horizontal, 6)
+                    .padding(.bottom, 3)
+            }
         }
     }
 }

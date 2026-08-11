@@ -9,6 +9,22 @@ struct ControlBar: View {
     @Bindable var session: GameSession
     var onHint: () -> Void
 
+    @Environment(\.dynamicTypeSize) private var typeSize
+
+    /// At accessibility sizes the captions come off and the icons stand alone.
+    ///
+    /// Five equal columns cannot hold five words once a caption is 30 points
+    /// tall: "Undo" broke to "Und / o", "Erase" to "Eras / e", and the wrapped
+    /// halves collided with the icons above them. Widening is not available —
+    /// there are five of them and the screen is the screen.
+    ///
+    /// Dropping the captions is the honest trade. The icons are standard and
+    /// already larger at these sizes, the tap targets grow rather than shrink,
+    /// and nothing is lost to VoiceOver: `accessibilityLabel` carries the word
+    /// whether or not it is drawn. Someone who needs the caption *and* the size
+    /// has Larger Text and VoiceOver, and both still work.
+    private var showsCaptions: Bool { !typeSize.isAccessibilitySize }
+
     var body: some View {
         HStack(spacing: 0) {
             control("Undo", systemImage: "arrow.uturn.backward", enabled: session.canUndo) {
@@ -58,10 +74,19 @@ struct ControlBar: View {
                             .offset(x: 12, y: -6)
                     }
                 }
-                Text(title)
-                    .font(.caption2)
+                if showsCaptions {
+                    Text(title)
+                        .font(.caption2)
+                        // One line, always. A caption that wraps is the defect
+                        // this guards against, and a five-column bar has no
+                        // width to give it a second line even if it wanted one.
+                        .lineLimit(1)
+                }
             }
             .frame(maxWidth: .infinity)
+            // The row keeps its height when the captions go, so the controls do
+            // not jump up the screen as the type size crosses the threshold.
+            .frame(minHeight: showsCaptions ? 0 : 44)
             .foregroundStyle(isActive ? Color.accentColor : (enabled ? Color.primary : Color.secondary.opacity(0.5)))
             .contentShape(Rectangle())
         }

@@ -13,13 +13,16 @@ struct WinCelebration: View {
     var onNewGame: () -> Void
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.dynamicTypeSize) private var typeSize
 
     var body: some View {
         ZStack {
-            if !reduceMotion {
-                ConfettiView(seed: UInt64(session.elapsedSeconds + 1))
-                    .allowsHitTesting(false)
-            }
+            // Still, not absent. Reduce Motion asks for less movement, not for
+            // less celebration, and someone who turns it on has still just
+            // solved the puzzle. The particles are drawn at the moment the burst
+            // is widest and simply do not move.
+            ConfettiView(seed: UInt64(session.elapsedSeconds + 1), isAnimated: !reduceMotion)
+                .allowsHitTesting(false)
 
             summary
         }
@@ -27,19 +30,59 @@ struct WinCelebration: View {
         .accessibilityLabel("Solved in \(session.formattedTime)")
     }
 
+    /// The card. At normal sizes it hugs its content; at accessibility sizes the
+    /// summary scrolls **and the buttons do not**.
+    ///
+    /// The same content is roughly three times as tall at the largest sizes, and
+    /// the first attempt at this — wrapping the whole card in a `ScrollView` —
+    /// fixed the overflow by pushing "New game" below the fold. A celebration
+    /// whose only way out has to be discovered by scrolling is a worse bug than
+    /// the one it replaced, so the buttons are pinned outside the scrolling part
+    /// and are on screen at every size.
+    @ViewBuilder
     private var summary: some View {
+        if typeSize.isAccessibilitySize {
+            VStack(spacing: 16) {
+                ScrollView {
+                    summaryContent
+                        .frame(maxWidth: .infinity)
+                }
+                // No rubber-banding when it already fits.
+                .scrollBounceBehavior(.basedOnSize)
+
+                actions
+            }
+            .frame(maxHeight: 560)
+            .modifier(CardStyle())
+        } else {
+            VStack(spacing: 16) {
+                summaryContent
+                actions
+            }
+            .modifier(CardStyle())
+        }
+    }
+
+    private var summaryContent: some View {
         VStack(spacing: 16) {
             Image(systemName: "checkmark.seal.fill")
                 .font(.system(size: 44))
                 .foregroundStyle(.green)
-                // A single settling bounce reads as celebration without the
-                // screen moving for three seconds.
-                .symbolEffect(.bounce, options: reduceMotion ? .nonRepeating : .repeat(2))
+                // A settling bounce reads as celebration without the screen
+                // moving for three seconds — and none at all under Reduce
+                // Motion. `options:` was the wrong lever: it chooses *how many*
+                // times to bounce, so the setting was quietly turning two
+                // bounces into one rather than into none. `isActive` is the one
+                // that means "do not".
+                .symbolEffect(.bounce, options: .repeat(2), isActive: !reduceMotion)
 
             Text("Solved")
                 .font(.title2.bold())
 
-            HStack(spacing: 24) {
+            // Three statistics side by side stop fitting long before the
+            // largest sizes, and a wrapped "Difficulty" over a stacked "Hints"
+            // is worse than a short column of them.
+            statisticsLayout {
                 statistic("Time", session.formattedTime)
                 statistic("Difficulty", session.difficulty.name)
                 if session.hintPoints > 0 {
@@ -50,22 +93,59 @@ struct WinCelebration: View {
             if !session.unlockedAchievements.isEmpty {
                 unlocked
             }
-
-            HStack(spacing: 12) {
-                Button("New game", action: onNewGame)
-                    .buttonStyle(.borderedProminent)
-                    .accessibilityIdentifier("win.newGame")
-                Button("Review board") { session.dismissWinSummary() }
-                    .buttonStyle(.bordered)
-                    .accessibilityIdentifier("win.review")
-            }
-            .padding(.top, 4)
         }
-        .padding(24)
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 20))
-        .shadow(radius: 20, y: 8)
-        .padding(.horizontal, 24)
-        .accessibilityIdentifier("win.summary")
+    }
+
+    /// Two buttons in a row become "Ne w…" and "Re- view…" at accessibility
+    /// sizes: a bordered button will not shrink its label, and there is no width
+    /// to give it. Stacked, each gets the full card and reads as itself.
+    private var actions: some View {
+        buttonLayout {
+            Button("New game", action: onNewGame)
+                .buttonStyle(.borderedProminent)
+                .accessibilityIdentifier("win.newGame")
+            Button("Review board") { session.dismissWinSummary() }
+                .buttonStyle(.bordered)
+                .accessibilityIdentifier("win.review")
+        }
+    }
+
+    /// The card's surface, corner and shadow, shared by both branches above so
+    /// the card cannot come out looking like two different cards.
+    ///
+    /// **Opaque, not `.regularMaterial`.** The material looked better and cost
+    /// the secondary text: "Time", "Difficulty" and every achievement detail
+    /// took up their space and drew nothing at all. Secondary foreground styles
+    /// are resolved against the backdrop they sit on, and over a blurred
+    /// material inside a `ScrollView` they resolved to no contrast whatever —
+    /// invisible in light mode *and* dark, which is how it survived the first
+    /// two attempts to fix it as a layout problem and then as a colour one.
+    ///
+    /// An opaque surface makes every semantic colour behave the way it reads in
+    /// the source. The blur was decoration; the labels are the content.
+    private struct CardStyle: ViewModifier {
+        func body(content: Content) -> some View {
+            content
+                .padding(24)
+                .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 20))
+                .shadow(radius: 20, y: 8)
+                .padding(.horizontal, 24)
+                .padding(.vertical, 32)
+                .accessibilityIdentifier("win.summary")
+        }
+    }
+
+    /// Row normally, column once the text is large enough that a row lies.
+    private var statisticsLayout: AnyLayout {
+        typeSize.isAccessibilitySize
+            ? AnyLayout(VStackLayout(spacing: 12))
+            : AnyLayout(HStackLayout(spacing: 24))
+    }
+
+    private var buttonLayout: AnyLayout {
+        typeSize.isAccessibilitySize
+            ? AnyLayout(VStackLayout(spacing: 10))
+            : AnyLayout(HStackLayout(spacing: 12))
     }
 
     /// Anything this solve unlocked.
@@ -78,7 +158,7 @@ struct WinCelebration: View {
         VStack(spacing: 8) {
             Divider()
             ForEach(session.unlockedAchievements) { achievement in
-                HStack(spacing: 10) {
+                HStack(alignment: .top, spacing: 10) {
                     Image(systemName: Self.symbol(for: achievement.icon))
                         .foregroundStyle(.yellow)
                         .font(.headline)
@@ -89,6 +169,10 @@ struct WinCelebration: View {
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
+                    // Wrap rather than truncate. "Easy St…" over "Complete…"
+                    // tells the player they earned something without telling
+                    // them what, which is the one thing this section is for.
+                    .fixedSize(horizontal: false, vertical: true)
                     Spacer(minLength: 0)
                 }
             }
@@ -107,6 +191,7 @@ struct WinCelebration: View {
         }
     }
 
+    /// A number over what it means.
     private func statistic(_ label: String, _ value: String) -> some View {
         VStack(spacing: 2) {
             Text(value)
@@ -128,9 +213,16 @@ struct WinCelebration: View {
 /// effect reproducible in a screenshot.
 private struct ConfettiView: View {
     let seed: UInt64
+    /// False under Reduce Motion: the same burst, held still.
+    var isAnimated = true
 
     private static let duration: TimeInterval = 2.5
     private static let count = 90
+
+    /// Where in its fall each particle is frozen when nothing is moving. Far
+    /// enough in that the burst has spread and the particles have turned, not so
+    /// far that half of them have already fallen off the bottom.
+    private static let stillPhase = 0.35
 
     private struct Particle {
         let x: Double
@@ -158,20 +250,33 @@ private struct ConfettiView: View {
     var body: some View {
         let particles = particles
 
-        TimelineView(.animation) { timeline in
+        if isAnimated {
+            TimelineView(.animation) { timeline in
+                Canvas { context, size in
+                    let now = timeline.date.timeIntervalSinceReferenceDate
+                    for particle in particles {
+                        // A stable phase so every particle falls at its own
+                        // offset without needing per-frame state.
+                        let phase =
+                            (now + particle.delay)
+                            .truncatingRemainder(dividingBy: Self.duration) / Self.duration
+                        draw(particle, in: &context, size: size, phase: phase)
+                    }
+                }
+            }
+        } else {
             Canvas { context, size in
-                let now = timeline.date.timeIntervalSinceReferenceDate
                 for particle in particles {
-                    draw(particle, in: &context, size: size, now: now)
+                    // The particle's own delay still spreads them out, so the
+                    // still frame keeps the scatter of the moving one rather
+                    // than lining every piece up on one row.
+                    draw(particle, in: &context, size: size, phase: Self.stillPhase + particle.delay / 4)
                 }
             }
         }
     }
 
-    private func draw(_ particle: Particle, in context: inout GraphicsContext, size: CGSize, now: TimeInterval) {
-        // A stable phase so every particle falls at its own offset without
-        // needing per-frame state.
-        let phase = (now + particle.delay).truncatingRemainder(dividingBy: Self.duration) / Self.duration
+    private func draw(_ particle: Particle, in context: inout GraphicsContext, size: CGSize, phase: Double) {
         guard phase > 0 else { return }
 
         let x = particle.x * size.width + particle.drift * size.width * phase
