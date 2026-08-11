@@ -20,7 +20,7 @@ the project's actual configuration, but the first run is the first run.
 | Apple **Distribution** certificate | ✅ `Apple Distribution: Ivan Pedrazas (TQ86N6HVWY)` | §1 |
 | App record in App Store Connect | ✅ app `6800377712` | §2 |
 | Screenshots at the sizes the page accepts | ❌ **iPhone wrong size, iPad partial** | see the end |
-| Privacy policy page | ❌ **does not exist** | `sudoku.andcake.dev/privacy` |
+| Privacy policy page | ✅ live | <https://sudoku.andcake.dev/privacy> |
 
 Provisioning and the app record are done, so §4 onward will run. The two
 outstanding rows both block *submission* rather than the archive itself — you
@@ -223,9 +223,10 @@ TestFlight, and failures arrive by email rather than in the terminal.
 - **Privacy answers** in App Store Connect must match
   `PrivacyInfo.xcprivacy`: no data collected, no tracking. Answering the
   questionnaire differently from the manifest is a review rejection.
-- **The privacy policy URL is required** and
-  `sudoku.andcake.dev/privacy` does not exist yet. Three sentences will do:
-  nothing is collected, nothing leaves the device, there is no server.
+- **The privacy policy URL** is <https://sudoku.andcake.dev/privacy>, live and
+  verified on a direct hit — which matters, because it is a client-side route in
+  a single-page app and Apple will load it cold rather than by clicking through.
+  It is a page in the `sudoku-and-cake` repository, not this one.
 
 ---
 

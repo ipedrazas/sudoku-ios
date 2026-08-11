@@ -75,9 +75,14 @@ is wasted space, so "cake" and "teaches" are deliberately absent.
 | Marketing URL | `https://sudoku.andcake.dev` |
 | Privacy policy URL | `https://sudoku.andcake.dev/privacy` |
 
-**The privacy policy page has to exist before submission.** It is a required
-field, and this app's policy is three sentences: nothing is collected, nothing
-leaves the device, there is no server.
+The privacy policy is live at <https://sudoku.andcake.dev/privacy>, and
+`privacy@andcake.dev` — the address it gives for deletion requests and
+questions — exists.
+
+It is served by the *web app* (`../sudoku-and-cake`, `frontend/src/pages/PrivacyPage.tsx`),
+and it describes the app and the website separately on purpose: this app
+collects nothing, the website has optional accounts and a database, and a single
+answer would have been untrue of both.
 
 ## App privacy answers
 
