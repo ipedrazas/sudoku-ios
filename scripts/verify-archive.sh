@@ -15,6 +15,22 @@ GROUP="group.dev.andcake.sudoku"
 fail=0
 note() { printf '  %s %s\n' "$1" "$2"; }
 
+# Read a bundle's signature once, into a variable.
+#
+# Never `codesign … | grep -q` or `codesign … | awk '…; exit'`. Those consumers
+# close the pipe on the first match, `codesign` takes SIGPIPE on its next write,
+# and `set -o pipefail` reports the pipeline as having failed with 141 — after
+# every check has already printed "ok". A real signature has three Authority
+# lines and more output after them, so it triggers this reliably; an ad-hoc
+# signature has none, reads to EOF, and does not. That difference is why this
+# script passed every test it was given and then failed on the first real
+# archive it ever saw.
+#
+# Here-strings below have no upstream process to kill, so early-exiting
+# consumers are safe against them.
+entitlements_of() { codesign -d --entitlements - "$1" 2>/dev/null || true; }
+signature_of() { codesign -dvv "$1" 2>&1 || true; }
+
 if [[ ! -d "${APP}" ]]; then
     echo "No app at ${APP} — did the archive succeed?" >&2
     exit 1
@@ -25,7 +41,7 @@ echo "Verifying ${ARCHIVE}"
 # 1. The App Group entitlement in the *signature*, not merely in the source
 #    .entitlements file. If the profile did not carry it, the app still works
 #    and every widget is blank forever — the state SnapshotStore degrades to.
-if codesign -d --entitlements - "${APP}" 2>/dev/null | grep -q "${GROUP}"; then
+if grep -q "${GROUP}" <<<"$(entitlements_of "${APP}")"; then
     note "ok  " "App Group ${GROUP} is in the signature"
 else
     note "FAIL" "App Group ${GROUP} missing from the signature — widgets would be blank on device"
@@ -37,7 +53,7 @@ fi
 if [[ -d "${APP}/PlugIns/SudokuWidgets.appex" ]]; then
     note "ok  " "SudokuWidgets.appex is embedded"
 
-    if codesign -d --entitlements - "${APP}/PlugIns/SudokuWidgets.appex" 2>/dev/null | grep -q "${GROUP}"; then
+    if grep -q "${GROUP}" <<<"$(entitlements_of "${APP}/PlugIns/SudokuWidgets.appex")"; then
         note "ok  " "the widget carries the App Group too"
     else
         note "FAIL" "the widget is missing the App Group — it could not read the snapshot"
@@ -60,7 +76,7 @@ done
 
 # 4. Signed with a distribution certificate rather than a development one. Both
 #    produce an archive; only one can be uploaded.
-authority=$(codesign -dvv "${APP}" 2>&1 | awk -F= '/^Authority=/ { print $2; exit }')
+authority=$(awk -F= '/^Authority=/ { print $2; exit }' <<<"$(signature_of "${APP}")")
 case "${authority}" in
     *Distribution*) note "ok  " "signed by: ${authority}" ;;
     "")             note "warn" "could not read the signing authority" ;;

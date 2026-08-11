@@ -189,6 +189,16 @@ sips -g pixelWidth -g pixelHeight screenshots/iphone-6.5/*.png
 
 Swap `DEV="iPad Pro 13"`, `iphone` → `ipad` and `OUT` for the iPad set.
 
+```bash
+DEV="iPad Pro 13"
+OUT=screenshots/ipad-6.5
+
+DEVICE="$DEV" ./scripts/screenshot.sh $OUT/1-home.png     ipad -skipWelcome -inMemoryStore
+DEVICE="$DEV" ./scripts/screenshot.sh $OUT/2-board.png    ipad -skipWelcome -inMemoryStore -startGame medium -prefill 38
+DEVICE="$DEV" ./scripts/screenshot.sh $OUT/4-settings.png ipad -skipWelcome -inMemoryStore
+DEVICE="$DEV" ./scripts/screenshot.sh $OUT/5-win.png      ipad -skipWelcome -inMemoryStore -startGame easy -prefill 0
+```
+
 Two of the five need a hand. `3-hint.png` requires tapping **Hint**, and
 `4-settings.png` requires navigating to Settings — no launch argument opens
 either, so take those with ⌘S in the simulator the script leaves running. That
