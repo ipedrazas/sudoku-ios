@@ -123,7 +123,7 @@ Capture with `scripts/screenshot.sh`, which drives `ScreenshotTests` through
 
 ## What is not here, and why
 
-Three things in P9-7 cannot be produced from this repository and are handed over
+Two things in P9-7 cannot be produced from this repository and are handed over
 deliberately rather than half-done:
 
 1. **The TestFlight build.** `xcodebuild archive` plus signing and upload.
@@ -133,6 +133,21 @@ deliberately rather than half-done:
 2. **The real screenshots.** They should come from a signed, properly built app
    with the compiled asset catalogue — not from the hand-linked bundle used for
    development checks in this sandbox.
-3. **The App Group registration.** `group.dev.andcake.sudoku` has to exist in
-   the developer portal against team `TQ86N6HVWY` before any signed build will
-   provision, or the widgets will be permanently empty on device.
+
+## Provisioning — done
+
+Registered in the developer portal against team `TQ86N6HVWY`:
+
+| Identifier | Kind | App Groups |
+|---|---|---|
+| `group.dev.andcake.sudoku` | App Group | — |
+| `dev.andcake.sudoku` | App ID (explicit) | enabled, 1 assigned |
+| `dev.andcake.sudoku.widgets` | App ID (explicit) | enabled, 1 assigned |
+
+Both App IDs were created explicitly rather than left to Xcode's automatic
+signing. Xcode creates a missing App ID on first build, but does not reliably
+enable App Groups *and* assign the group to it — and the failure mode is a
+provisioning error that names the entitlement rather than the assignment, which
+sends you looking in the wrong place. Enabling the capability is also not
+enough on its own: the group has to be ticked in the App ID's **Configure**
+sheet, which is what makes it read "Enabled App Groups (1)".

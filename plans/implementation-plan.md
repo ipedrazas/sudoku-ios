@@ -1236,12 +1236,19 @@ and every screen captured on iPhone at default *and*
 `accessibility-extra-extra-extra-large`, in light and dark, via
 `simctl ui content_size`.
 
-**Not done, and handed over:** the TestFlight build, the real App Store
-screenshots, and registering the App Group in the developer portal. All three
-need `xcodebuild` or App Store Connect, neither of which is reachable from the
-sandbox this was built in. The listing text, privacy answers and review notes
-are written down in `plans/store-listing.md` so the only thing left is the
-upload itself. iPad at the largest type size in *regular* width also remains
+**Provisioning is done.** `group.dev.andcake.sudoku` and both App IDs
+(`dev.andcake.sudoku`, `dev.andcake.sudoku.widgets`) are registered against team
+`TQ86N6HVWY`, with App Groups enabled *and the group assigned* on each. The
+assignment is the part that is easy to miss: enabling the capability without
+ticking the group in the Configure sheet still fails to provision, and the error
+names the entitlement rather than the assignment, which sends you looking in the
+wrong place.
+
+**Not done, and handed over:** the TestFlight build and the real App Store
+screenshots. Both need `xcodebuild`, which is not reachable from the sandbox
+this was built in. The listing text, privacy answers and review notes are
+written down in `plans/store-listing.md` so the only thing left is the upload
+itself. iPad at the largest type size in *regular* width also remains
 unverified: iPadOS 26 launches the app windowed in the simulator, so what was
 captured there is the compact layout again.
 
