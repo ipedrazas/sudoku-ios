@@ -194,26 +194,42 @@ Result: `build/export/SudokuApp.ipa`, plus a `DistributionSummary.plist` and the
 
 Pick one.
 
-**Xcode's own uploader** — no extra credentials if Xcode is signed in:
+All of them need an **app-specific password** — appleid.apple.com → Sign-In and
+Security → App-Specific Passwords. Your normal Apple ID password will not work,
+and the error does not say so clearly.
+
+**Simplest: pass it through the environment.** No keychain, nothing stored, and
+the password never appears in the command line or in shell history:
 
 ```bash
+read -rs APP_PASSWORD && export APP_PASSWORD      # paste it, press return
+
 xcrun altool --upload-app \
   -f build/export/SudokuApp.ipa \
   -t ios \
   -u ipedrazas@gmail.com \
-  -p "@keychain:AC_PASSWORD"
+  -p @env:APP_PASSWORD
 ```
 
-`AC_PASSWORD` is an **app-specific password** (appleid.apple.com → Sign-In and
-Security → App-Specific Passwords), stored once with:
+`@env:` and `@keychain:` are both documented under `-p` in `altool --help`.
+
+**Or store it in the keychain once**, if you would rather not re-paste it:
 
 ```bash
-xcrun altool --store-password-in-keychain-item AC_PASSWORD \
-  -u ipedrazas@gmail.com -p <the-app-specific-password>
+xcrun altool --store-password-in-keychain-item --item AC_PASSWORD \
+  -u ipedrazas@gmail.com -p "the-app-specific-password"
 ```
 
-Your normal Apple ID password will not work and the error does not say so
-clearly.
+then `-p @keychain:AC_PASSWORD` on the upload.
+
+> **`--item` is required, and `altool --help` says otherwise.** The help — and
+> every recipe on the internet, and the first version of this file — gives the
+> item name positionally:
+> `altool --store-password-in-keychain-item AC_PASSWORD -u … -p …`. On altool
+> 26.40.1 that fails with `Expected item argument is missing, --item. (29)`.
+> The binary wants the flag; its own usage text has not caught up. Confirmed by
+> passing `--item` alone, which gets past that error and on to complaining about
+> the missing username.
 
 **With an API key** instead, if you made one in §1:
 
