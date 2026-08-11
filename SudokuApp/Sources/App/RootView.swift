@@ -11,6 +11,9 @@ struct RootView: View {
     let library: GameLibrary
     let daily: DailyModel
     let stats: StatsModel
+    let settings: AppSettings
+    /// Set by the app when a link is opened; consumed here and cleared.
+    @Binding var sharedPuzzle: GeneratedPuzzle?
 
     /// Where the stack can go. The game is a destination like any other, so
     /// finishing a daily returns to the calendar it was started from rather than
@@ -19,6 +22,8 @@ struct RootView: View {
         case daily
         case calendar
         case stats
+        case importPuzzle
+        case settings
         case game
     }
 
@@ -27,6 +32,7 @@ struct RootView: View {
     /// Achievements unlocked by the solve just finished, so the grid can mark
     /// them when the player goes looking. Cleared when a new game starts.
     @State private var recentlyUnlocked: Set<String> = []
+    @State private var importModel = ImportModel()
 
     var body: some View {
         NavigationStack(path: $path) {
@@ -46,6 +52,15 @@ struct RootView: View {
         .onChange(of: path) { _, path in
             if !path.contains(.game) { releaseSession() }
         }
+        // A setting changed while a game is open applies to that game, rather
+        // than to the next one — which is what the player just asked for.
+        .onChange(of: settings.highlightsMistakes) { _, value in session?.showsConflicts = value }
+        .onChange(of: settings.inputMode) { _, value in session?.inputMode = value }
+        .onChange(of: settings.inactivityMinutes) { _, value in session?.inactivityMinutes = value }
+        // A link may arrive before this view exists (a cold launch from a tap)
+        // or while a game is open, so it is consumed on change *and* on appear.
+        .onChange(of: sharedPuzzle) { _, puzzle in openShared(puzzle) }
+        .task { openShared(sharedPuzzle) }
     }
 
     @ViewBuilder
@@ -57,6 +72,12 @@ struct RootView: View {
             CalendarScreen(model: daily, onPlay: playDaily)
         case .stats:
             StatsScreen(model: stats, highlighting: recentlyUnlocked)
+        case .importPuzzle:
+            ImportScreen(model: importModel) { puzzle in
+                play(library.start(puzzle, source: .imported))
+            }
+        case .settings:
+            SettingsScreen(settings: settings, stats: stats, onEraseAll: eraseAll)
         case .game:
             if let session {
                 GameScreen(session: session) { endGame() }
@@ -113,6 +134,20 @@ struct RootView: View {
                 }
                 .buttonStyle(.plain)
                 .accessibilityIdentifier("home.stats")
+
+                navigationRow(
+                    title: "Import a puzzle",
+                    subtitle: "Type one in from a newspaper",
+                    route: .importPuzzle,
+                    identifier: "home.import"
+                )
+
+                navigationRow(
+                    title: "Settings",
+                    subtitle: "How the game plays and feels",
+                    route: .settings,
+                    identifier: "home.settings"
+                )
             }
 
             if !library.savedGames.isEmpty {
@@ -168,6 +203,34 @@ struct RootView: View {
         return today.isInProgress ? "In progress" : "Not played yet"
     }
 
+    private func navigationRow(
+        title: String,
+        subtitle: String,
+        route: Route,
+        identifier: String
+    ) -> some View {
+        Button {
+            path.append(route)
+        } label: {
+            LabeledContent {
+                Image(systemName: "chevron.right")
+                    .font(.footnote.weight(.semibold))
+                    .foregroundStyle(.tertiary)
+            } label: {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(title)
+                        .font(.headline)
+                    Text(subtitle)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .contentShape(.rect)
+        }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier(identifier)
+    }
+
     private var statsSubtitle: String {
         let solved = stats.stats.totalFinished
         guard solved > 0 else { return "Nothing solved yet" }
@@ -195,18 +258,43 @@ struct RootView: View {
             let puzzle = await provider.newGame(difficulty)
             let session = library.start(puzzle)
             Self.prefill(session)
-            show(session)
+            play(session)
         }
     }
 
     private func resume(_ summary: SavedGameSummary) {
-        show(library.resume(summary))
+        play(library.resume(summary), isNew: false)
+    }
+
+    /// Opens a puzzle that arrived from a link, and clears it so a later
+    /// redraw does not open it again.
+    private func openShared(_ puzzle: GeneratedPuzzle?) {
+        guard let puzzle else { return }
+        sharedPuzzle = nil
+        path.removeAll()
+        play(library.start(puzzle, source: .shared))
     }
 
     /// Plays the daily for a date — today's from the daily screen, any past
     /// day's from the calendar.
     private func playDaily(_ date: Date) {
-        Task { show(await library.daily(for: date)) }
+        Task { play(await library.daily(for: date), isNew: false) }
+    }
+
+    /// Starts a freshly created session: applies the settings, then shows it.
+    private func play(_ session: GameSession, isNew: Bool = true) {
+        configure(session)
+        // Notes are filled at the start of a *new* game only. Doing it on resume
+        // would overwrite marks the player made by hand.
+        if isNew, settings.autoFillNotes { session.autoFillNotes() }
+        show(session)
+    }
+
+    /// Everything a session takes from settings rather than deciding itself.
+    private func configure(_ session: GameSession) {
+        session.showsConflicts = settings.highlightsMistakes
+        session.inputMode = settings.inputMode
+        session.inactivityMinutes = settings.inactivityMinutes
     }
 
     private func show(_ session: GameSession) {
@@ -214,6 +302,15 @@ struct RootView: View {
         recentlyUnlocked = []
         self.session = session
         if path.last != .game { path.append(.game) }
+    }
+
+    /// Wipes the store and returns to a clean home screen.
+    private func eraseAll() {
+        releaseSession()
+        path.removeAll()
+        library.eraseEverything()
+        daily.refresh()
+        stats.refresh()
     }
 
     private func delete(at offsets: IndexSet) {

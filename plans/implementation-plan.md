@@ -1087,18 +1087,49 @@ built and screenshotted in a simulator.
 
 ### Phase 7 — Hints, import, sharing, settings · 3–4 days
 
-| ID | Task |
-|---|---|
-| P7-1 | `HintEngine` with the four escalating levels |
-| P7-2 | Exact mistake detection against the stored solution, offered before any technique hint |
-| P7-3 | Hint presentation: highlight cells/units, plain-language explanation, reveal |
-| P7-4 | Manual import: 81-cell entry grid, min 17 givens, uniqueness check, **plus the rated difficulty** (a touch the web app lacks) |
-| P7-5 | `ShareCode` encode/decode, URL scheme + Universal Link, "share as image" board render |
-| P7-6 | Settings screen: theme, error highlighting, inactivity, input mode, auto-pencil, haptics, sound, notifications |
+| ID | Task | State |
+|---|---|---|
+| P7-1 | `HintEngine` with the four escalating levels | done — engine landed in Phase 2 |
+| P7-2 | Exact mistake detection against the stored solution, offered before any technique hint | done |
+| P7-3 | Hint presentation: highlight cells/units, plain-language explanation, reveal | done |
+| P7-4 | Manual import: 81-cell entry grid, min 17 givens, uniqueness check, **plus the rated difficulty** (a touch the web app lacks) | done |
+| P7-5 | `ShareCode` encode/decode, URL scheme + Universal Link, "share as image" board render | done |
+| P7-6 | Settings screen: theme, error highlighting, inactivity, input mode, auto-pencil, haptics, sound, notifications | done |
 
 *Done when:* the hint engine explains a locked-candidate step and an X-wing step
 in plain language on a real puzzle, and a shared link opens the exact puzzle on a
 second device.
+
+**Reveal did nothing for the hint that matters most.** `applyHint` guarded
+`placement.digit != 0` — and a mistake hint carries exactly digit 0, meaning
+"this cell should not say what it says". So the one hint a stuck player most
+needs to act on was the one whose button did nothing. It erases now, and the
+button says "Erase it" rather than "Fill it in".
+
+**Settings became a model, not `@AppStorage`.** A session is built from the
+input mode and the mistake setting before any view exists, and the reminder
+scheduler reads the hour from a background refresh — neither is a view, and
+`@AppStorage` only works in one. `AppSettings` is an `@Observable` over
+`UserDefaults` that views bind to identically. The Phase 5 reminder keys are
+unchanged, so an upgrade does not silently switch anyone's reminder off.
+
+**Import rates as well as validates.** The checks run cheapest-first — rule
+conflicts, then the 17-clue floor (the proven minimum for a unique solution, so
+below it there is no point asking the solver), then `countSolutions(limit: 2)`,
+which stops at "more than one" rather than counting. What comes back is the tier
+in the vocabulary the hints use, which answers the question a player actually
+has: not "is this legal" but "what am I in for".
+
+**Two defects found by screenshotting, again.** The hint explanation for a naked
+single read "R4C2 is the only digit not already in its row, column or box" — a
+cell is not a digit, and the sentence describes a different technique. And the
+import grid's box lines derived their *vertical* step from the view's width,
+which is only correct once the square is imposed — the heavy lines were drawn
+across the middle of rows.
+
+**Verified by running:** 41 assertions over import, sharing, hint presentation,
+settings and erase, run as a macOS binary against the real sources; plus the
+import, hint and settings screens built and screenshotted in a simulator.
 
 ### Phase 8 — Widgets, haptics, polish · 3–4 days
 

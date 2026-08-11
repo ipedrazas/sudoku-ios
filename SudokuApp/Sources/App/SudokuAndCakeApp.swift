@@ -1,3 +1,4 @@
+import SudokuKit
 import SwiftUI
 
 @main
@@ -7,6 +8,9 @@ struct SudokuAndCakeApp: App {
     @State private var library = GameLibrary(repository: Self.repository)
     @State private var daily = DailyModel(repository: Self.repository)
     @State private var stats = StatsModel(repository: Self.repository)
+    @State private var settings = AppSettings()
+    /// A puzzle that arrived from a link, handed to the root view once it exists.
+    @State private var sharedPuzzle: GeneratedPuzzle?
 
     /// One store, shared. The library writes to it and the daily model reads
     /// from it; two containers over the same file would be two answers to every
@@ -18,7 +22,21 @@ struct SudokuAndCakeApp: App {
         // puzzles side by side for free, which only stays free if session state
         // is never a global singleton.
         WindowGroup {
-            RootView(provider: provider, library: library, daily: daily, stats: stats)
+            RootView(
+                provider: provider,
+                library: library,
+                daily: daily,
+                stats: stats,
+                settings: settings,
+                sharedPuzzle: $sharedPuzzle
+            )
+            .preferredColorScheme(settings.theme.colorScheme)
+            // Both link shapes land here: the custom scheme, which needs no
+            // infrastructure, and the universal link, which needs a domain but
+            // survives being pasted into mail.
+            .onOpenURL { url in
+                sharedPuzzle = PuzzleSharing.generatedPuzzle(from: url)
+            }
         }
         .onChange(of: scenePhase) { _, phase in
             guard phase != .active else { return }

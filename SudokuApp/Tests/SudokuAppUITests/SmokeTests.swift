@@ -140,6 +140,37 @@ final class SmokeTests: XCTestCase {
         XCTAssertTrue(achievements.exists, "achievements are listed even when none are earned")
     }
 
+    /// Import and settings, which are both screens that can only be reached
+    /// from the home list and both of which build a lot of view on appear.
+    @MainActor
+    func testImportAndSettingsOpen() {
+        let app = launchApp()
+
+        let importRow = app.buttons["home.import"]
+        XCTAssertTrue(importRow.waitForExistence(timeout: 30), "the home screen should offer import")
+        importRow.tap()
+
+        XCTAssertTrue(
+            app.buttons["import.cell.0"].waitForExistence(timeout: 15),
+            "the entry grid should render"
+        )
+        // An empty grid cannot be played, and the screen has to say why rather
+        // than just disabling the button.
+        XCTAssertFalse(app.buttons["import.play"].isEnabled)
+        let status = app.descendants(matching: .any).matching(identifier: "import.status").firstMatch
+        XCTAssertTrue(status.exists, "the status should always be on screen")
+
+        app.navigationBars.buttons.element(boundBy: 0).tap()
+
+        let settings = app.buttons["home.settings"]
+        XCTAssertTrue(settings.waitForExistence(timeout: 15), "the home screen should offer settings")
+        settings.tap()
+        XCTAssertTrue(
+            app.switches["settings.highlightMistakes"].waitForExistence(timeout: 15),
+            "settings should render"
+        )
+    }
+
     /// Phase 4's acceptance criterion, on a real device store: play, quit the
     /// app outright, come back, and find the game where it was left.
     ///
