@@ -17,6 +17,23 @@ enum InputMode: String, CaseIterable, Sendable {
     }
 }
 
+/// Something worth feeling or hearing.
+///
+/// The session names the event; deciding what a `.conflicted` feels like is the
+/// view layer's business. That separation is what keeps this file free of UIKit,
+/// which is what lets the whole session run in a plain macOS harness — the only
+/// way any of this logic gets executed without Xcode.
+enum GameEvent: Equatable, Sendable {
+    /// A digit went into an empty cell without breaking anything.
+    case placed
+    /// A digit went in and clashes with one already on the board.
+    case conflicted
+    /// A row, column or box was just completed correctly.
+    case unitCompleted
+    /// The last cell went in and the grid is solved.
+    case solved
+}
+
 /// The state of one puzzle in progress.
 ///
 /// Replaces the web app's `useGameBoard` + `useGameTimer` + `useGamePersistence`
@@ -96,6 +113,21 @@ final class GameSession {
     /// changed, and a closure the owner sets is both cheaper than
     /// `withObservationTracking` and testable without a view in the loop.
     var didChange: (() -> Void)?
+
+    /// Called when something happened that is worth a haptic or a sound.
+    ///
+    /// Separate from `didChange` because the two have different owners and
+    /// different rules: persistence wants every mutation, feedback wants only
+    /// the interesting ones, and an undo is very much a mutation and very much
+    /// not a placement.
+    var didEmit: ((GameEvent) -> Void)?
+
+    /// The cell the current mutation is filling, if it is filling one.
+    ///
+    /// Set by `place` and read once by the change handler, which is what lets
+    /// "a digit was placed" be told apart from "the board changed" — undo, redo,
+    /// restart and auto-fill all change the board and none of them is a move.
+    private var placingCell: CellRef?
 
     /// Bumped on every board or pencil mutation. Derived values memoise against
     /// it so a redraw does not re-derive conflicts for the whole grid.
@@ -262,6 +294,10 @@ final class GameSession {
             return
         }
 
+        // Only a fill counts as a placement. Tapping the digit already there
+        // erases it, and an erase is not a move to celebrate.
+        placingCell = board[cell] == digit ? nil : cell
+
         mutate {
             // Entering the digit already there erases it, so the same key both
             // writes and undoes (`useGameBoard.ts:286-289`).
@@ -405,6 +441,11 @@ final class GameSession {
     func applyHint(_ hint: Hint) {
         guard let placement = hint.placement else { return }
         guard !isGiven(placement.cell) else { return }
+
+        // A revealed hint fills a cell, so it feels like filling a cell. Digit 0
+        // is the mistake case — "this should not say what it says" — which is an
+        // erase and gets nothing.
+        placingCell = placement.digit == 0 ? nil : placement.cell
 
         mutate {
             board[placement.cell] = placement.digit
@@ -581,14 +622,43 @@ final class GameSession {
         activeHint = nil
         detectNewlyCompletedUnits()
 
+        // Read and cleared here whatever happens, so a mutation that does not go
+        // through `place` cannot inherit the last one's cell.
+        let placed = placingCell
+        placingCell = nil
+
+        var justSolved = false
         if isSolved, finishedAt == nil {
             finishedAt = Date()
             isPaused = true
             showsWinSummary = true
+            justSolved = true
         }
+
+        emit(placed: placed, justSolved: justSolved)
 
         // Last, so a listener that records the completion sees `finishedAt` set.
         didChange?()
+    }
+
+    /// The one event this change deserves, loudest first.
+    ///
+    /// At most one, deliberately. The move that completes the last box also
+    /// solves the puzzle, and firing three haptics into each other produces a
+    /// mush rather than three feelings.
+    private func emit(placed: CellRef?, justSolved: Bool) {
+        guard didEmit != nil else { return }
+
+        if justSolved {
+            didEmit?(.solved)
+        } else if !celebratingUnits.isEmpty {
+            didEmit?(.unitCompleted)
+        } else if let placed {
+            // A conflict is only ever announced when the player asked to be
+            // told about mistakes. Buzzing at someone who turned highlighting
+            // off tells them exactly what they opted out of hearing.
+            didEmit?(showsConflicts && conflicts.contains(placed) ? .conflicted : .placed)
+        }
     }
 
     /// Fires the celebration only for units that became complete *just now*.

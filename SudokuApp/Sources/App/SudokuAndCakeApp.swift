@@ -9,8 +9,12 @@ struct SudokuAndCakeApp: App {
     @State private var daily = DailyModel(repository: Self.repository)
     @State private var stats = StatsModel(repository: Self.repository)
     @State private var settings = AppSettings()
-    /// A puzzle that arrived from a link, handed to the root view once it exists.
-    @State private var sharedPuzzle: GeneratedPuzzle?
+    /// Where a link asked to go, handed to the root view once it exists.
+    @State private var link: DeepLink?
+
+    /// What the widgets are allowed to see. A struct over the same repository,
+    /// so there is nothing to observe and nothing to keep in step.
+    private let snapshots = SnapshotPublisher(repository: SudokuAndCakeApp.repository)
 
     /// One store, shared. The library writes to it and the daily model reads
     /// from it; two containers over the same file would be two answers to every
@@ -28,14 +32,15 @@ struct SudokuAndCakeApp: App {
                 daily: daily,
                 stats: stats,
                 settings: settings,
-                sharedPuzzle: $sharedPuzzle
+                snapshots: snapshots,
+                link: $link
             )
             .preferredColorScheme(settings.theme.colorScheme)
-            // Both link shapes land here: the custom scheme, which needs no
-            // infrastructure, and the universal link, which needs a domain but
-            // survives being pasted into mail.
+            // Every link lands here: a widget tap, the custom scheme, which
+            // needs no infrastructure, and the universal link, which needs a
+            // domain but survives being pasted into mail.
             .onOpenURL { url in
-                sharedPuzzle = PuzzleSharing.generatedPuzzle(from: url)
+                link = DeepLink(url: url)
             }
         }
         .onChange(of: scenePhase) { _, phase in
@@ -44,6 +49,11 @@ struct SudokuAndCakeApp: App {
             // debounce is a second long and a backgrounded app may not get it,
             // so the pending write happens here instead.
             library.flush()
+            // And the widgets are told, now that the save they would otherwise
+            // have missed has landed. Backgrounding is when a widget is about to
+            // be looked at, which makes it the one moment worth spending a
+            // reload on.
+            snapshots.publish()
             // And the pool is persisted, so a cold launch starts warm.
             Task { await provider.suspend() }
         }

@@ -25,8 +25,12 @@ final class SmokeTests: XCTestCase {
 
     /// A run must not inherit whatever the last one left in the store, or the
     /// home screen has an "In progress" section that no test put there.
+    ///
+    /// `-skipWelcome` is the same idea for the onboarding sheet, which lives in
+    /// `UserDefaults` rather than the store: without it these tests would pass
+    /// on a simulator that had run the app before and fail on a fresh one.
     @MainActor
-    private func launchApp(arguments: [String] = ["-inMemoryStore"]) -> XCUIApplication {
+    private func launchApp(arguments: [String] = ["-inMemoryStore", "-skipWelcome"]) -> XCUIApplication {
         let app = XCUIApplication()
         app.launchArguments = arguments
         app.launch()
@@ -178,9 +182,27 @@ final class SmokeTests: XCTestCase {
     /// reason — so it uses `-resetStore` on the first launch instead, and the
     /// second launch deliberately does not, because inheriting the first
     /// launch's state is the entire point.
+    /// The welcome sheet is the first thing a new player sees, and the only
+    /// screen in the app that can trap someone: it disables interactive
+    /// dismissal, so if its button ever stopped working the app would be
+    /// unusable from a fresh install and every other test here would still pass.
+    @MainActor
+    func testTheWelcomeSheetCanBeDismissed() {
+        let app = launchApp(arguments: ["-inMemoryStore", "-forceWelcome"])
+
+        let start = app.buttons["welcome.start"]
+        XCTAssertTrue(start.waitForExistence(timeout: 30), "the welcome sheet should appear")
+        start.tap()
+
+        XCTAssertTrue(
+            app.buttons["difficulty.easy"].waitForExistence(timeout: 30),
+            "dismissing the welcome should leave the home screen"
+        )
+    }
+
     @MainActor
     func testAGameSurvivesBeingQuit() {
-        let app = launchApp(arguments: ["-resetStore"])
+        let app = launchApp(arguments: ["-resetStore", "-skipWelcome"])
 
         let easy = app.buttons["difficulty.easy"]
         XCTAssertTrue(easy.waitForExistence(timeout: 30), "the difficulty picker should appear")
@@ -211,7 +233,9 @@ final class SmokeTests: XCTestCase {
         )
         app.terminate()
 
-        app.launchArguments = []
+        // Everything except the welcome sheet, which is not store state and
+        // would stand in front of the resume list this test is about.
+        app.launchArguments = ["-skipWelcome"]
         app.launch()
 
         let resume = app.buttons["resume.0"]

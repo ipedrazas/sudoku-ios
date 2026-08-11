@@ -12,8 +12,9 @@ struct RootView: View {
     let daily: DailyModel
     let stats: StatsModel
     let settings: AppSettings
+    let snapshots: SnapshotPublisher
     /// Set by the app when a link is opened; consumed here and cleared.
-    @Binding var sharedPuzzle: GeneratedPuzzle?
+    @Binding var link: DeepLink?
 
     /// Where the stack can go. The game is a destination like any other, so
     /// finishing a daily returns to the calendar it was started from rather than
@@ -33,6 +34,13 @@ struct RootView: View {
     /// them when the player goes looking. Cleared when a new game starts.
     @State private var recentlyUnlocked: Set<String> = []
     @State private var importModel = ImportModel()
+    /// Owned here rather than by the game screen so its generators outlive one
+    /// board — the whole point of preparing them is not paying for it again.
+    @State private var feedback = Feedback()
+    @State private var showsWelcome = false
+    /// The source for the zoom into a game. A namespace rather than a boolean
+    /// because the transition is matched: the row grows into the board.
+    @Namespace private var transition
 
     var body: some View {
         NavigationStack(path: $path) {
@@ -45,6 +53,12 @@ struct RootView: View {
             daily.refresh()
             stats.refresh()
             if let difficulty = Self.launchDifficulty { start(difficulty) }
+            applyFeedbackSettings()
+            showWelcomeIfNeeded()
+            await publishSnapshot()
+        }
+        .sheet(isPresented: $showsWelcome) {
+            WelcomeSheet { showsWelcome = false }
         }
         // Covers the back button and the back swipe, which no callback of ours
         // would otherwise hear about — a session left attached would keep
@@ -57,10 +71,14 @@ struct RootView: View {
         .onChange(of: settings.highlightsMistakes) { _, value in session?.showsConflicts = value }
         .onChange(of: settings.inputMode) { _, value in session?.inputMode = value }
         .onChange(of: settings.inactivityMinutes) { _, value in session?.inactivityMinutes = value }
-        // A link may arrive before this view exists (a cold launch from a tap)
-        // or while a game is open, so it is consumed on change *and* on appear.
-        .onChange(of: sharedPuzzle) { _, puzzle in openShared(puzzle) }
-        .task { openShared(sharedPuzzle) }
+        // Muting takes effect on the move being made, not the next game.
+        .onChange(of: settings.hapticsEnabled) { _, _ in applyFeedbackSettings() }
+        .onChange(of: settings.soundEnabled) { _, _ in applyFeedbackSettings() }
+        // A link may arrive before this view exists (a cold launch from a widget
+        // tap) or while a game is open, so it is consumed on change *and* on
+        // appear.
+        .onChange(of: link) { _, link in follow(link) }
+        .task { follow(link) }
     }
 
     @ViewBuilder
@@ -81,6 +99,11 @@ struct RootView: View {
         case .game:
             if let session {
                 GameScreen(session: session) { endGame() }
+                    // The board grows out of the row that started it. A push
+                    // would slide a full-screen grid in from the side; this says
+                    // "that thing you tapped became this", which is what
+                    // actually happened.
+                    .navigationTransition(.zoom(sourceID: Route.game, in: transition))
             }
         }
     }
@@ -150,6 +173,19 @@ struct RootView: View {
                 )
             }
 
+            // Nothing saved and nothing ever finished: a first launch, or one
+            // after "delete all data". Said in one line rather than as a
+            // `ContentUnavailableView`, which fills a third of the screen and
+            // pushes the difficulty rows — the thing this screen is for — below
+            // the fold on the one launch where nobody knows to scroll.
+            if library.savedGames.isEmpty, stats.stats.totalFinished == 0 {
+                Section("In progress") {
+                    Text("Nothing yet. Games save themselves as you play, and turn up here.")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
+            }
+
             if !library.savedGames.isEmpty {
                 Section("In progress") {
                     ForEach(Array(library.savedGames.enumerated()), id: \.element.id) { index, summary in
@@ -160,6 +196,7 @@ struct RootView: View {
                         }
                         .buttonStyle(.plain)
                         .accessibilityIdentifier("resume.\(index)")
+                        .matchedTransitionSource(id: Route.game, in: transition)
                     }
                     .onDelete(perform: delete)
                 }
@@ -184,6 +221,10 @@ struct RootView: View {
                     }
                     .buttonStyle(.plain)
                     .accessibilityIdentifier("difficulty.\(difficulty.rawValue)")
+                    // Every row that can open a board is a source for the same
+                    // zoom. Only the one actually tapped is on screen when the
+                    // transition runs, so they cannot compete.
+                    .matchedTransitionSource(id: Route.game, in: transition)
                 }
             } header: {
                 Text("New game")
@@ -257,8 +298,13 @@ struct RootView: View {
         Task {
             let puzzle = await provider.newGame(difficulty)
             let session = library.start(puzzle)
-            Self.prefill(session)
             play(session)
+            // After `play`, not before: prefilling an unconfigured session fills
+            // it with mistake highlighting off and no feedback attached, so a
+            // screenshot run reaches the win card without ever going through the
+            // path a player goes through. Filling a session that is already on
+            // screen is what actually happens when someone plays.
+            Self.prefill(session)
         }
     }
 
@@ -266,12 +312,48 @@ struct RootView: View {
         play(library.resume(summary), isNew: false)
     }
 
-    /// Opens a puzzle that arrived from a link, and clears it so a later
-    /// redraw does not open it again.
-    private func openShared(_ puzzle: GeneratedPuzzle?) {
-        guard let puzzle else { return }
-        sharedPuzzle = nil
+    /// Goes where a link asked, and clears it so a later redraw does not go
+    /// there again.
+    ///
+    /// Every route starts by emptying the stack. A link is a jump, not a push:
+    /// arriving from the Lock Screen to find three screens of someone else's
+    /// history behind the back button is disorienting, and the daily is where
+    /// every widget points anyway.
+    private func follow(_ link: DeepLink?) {
+        guard let link else { return }
+        self.link = nil
         path.removeAll()
+
+        switch link {
+        case .daily:
+            // A solved daily opens its screen rather than its board. Tapping
+            // "done ✓" and landing in a finished grid with nothing to do is a
+            // dead end; the daily screen at least offers the calendar.
+            if daily.isCompleted() {
+                path = [.daily]
+            } else {
+                path = [.daily]
+                playDaily(Date())
+            }
+        case .calendar:
+            // Pushed behind the calendar so Back goes somewhere sensible rather
+            // than straight out to the home screen.
+            path = [.daily, .calendar]
+        case .stats:
+            path = [.stats]
+        case .puzzle(let code):
+            openShared(code)
+        }
+    }
+
+    /// Opens a puzzle carried whole in a share code.
+    ///
+    /// Decoding is strict — `PuzzleSharing` refuses a code that does not solve
+    /// uniquely — and a refusal is silent: the link came from outside the app,
+    /// and an alert about a malformed code is a worse first impression than
+    /// simply arriving at the home screen.
+    private func openShared(_ code: String) {
+        guard let puzzle = PuzzleSharing.generatedPuzzle(from: code) else { return }
         play(library.start(puzzle, source: .shared))
     }
 
@@ -295,6 +377,42 @@ struct RootView: View {
         session.showsConflicts = settings.highlightsMistakes
         session.inputMode = settings.inputMode
         session.inactivityMinutes = settings.inactivityMinutes
+        // Wired here rather than in the game screen so every session gets it,
+        // including one opened straight from a link with no screen in between.
+        session.didEmit = { [feedback] event in feedback.play(event) }
+        // The Taptic Engine takes tens of milliseconds to wake, which is long
+        // enough for the first tap of a game to feel like it missed.
+        feedback.prepare()
+    }
+
+    /// Shows the welcome sheet on a first launch, and never again.
+    ///
+    /// Not shown when something already has somewhere to be: a launch argument,
+    /// or a link that was tapped. A screenshot run, a UI test and a shared
+    /// puzzle all arrive with an intention, and a sheet in front of it is an
+    /// obstacle rather than a welcome.
+    ///
+    /// `-skipWelcome` and `-forceWelcome` exist because "have you seen this
+    /// before" is per-simulator state that no launch argument otherwise clears:
+    /// `-inMemoryStore` empties the store but not `UserDefaults`, so without
+    /// these a UI test would pass or fail depending on whether that simulator
+    /// had ever run the app before.
+    private func showWelcomeIfNeeded() {
+        let arguments = ProcessInfo.processInfo.arguments
+        if arguments.contains("-forceWelcome") {
+            showsWelcome = true
+            return
+        }
+        guard !arguments.contains("-skipWelcome") else { return }
+        guard !settings.hasSeenWelcome, link == nil, Self.launchDifficulty == nil else { return }
+        settings.hasSeenWelcome = true
+        showsWelcome = true
+    }
+
+    private func applyFeedbackSettings() {
+        feedback.isHapticsEnabled = settings.hapticsEnabled
+        feedback.isSoundEnabled = settings.soundEnabled
+        feedback.prepare()
     }
 
     private func show(_ session: GameSession) {
@@ -311,6 +429,19 @@ struct RootView: View {
         library.eraseEverything()
         daily.refresh()
         stats.refresh()
+        // Including the widgets, which would otherwise keep showing a streak
+        // from a history that no longer exists.
+        snapshots.publish()
+    }
+
+    /// Makes sure today's daily exists, then tells the widgets what is true.
+    ///
+    /// Generating here rather than waiting for the player to open the daily is
+    /// what lets the mini-board widget show today's actual grid. It costs one
+    /// carve a day, off the main actor.
+    private func publishSnapshot() async {
+        await library.ensureDaily(for: Date())
+        snapshots.publish()
     }
 
     private func delete(at offsets: IndexSet) {
@@ -344,6 +475,10 @@ struct RootView: View {
         // games that have ended.
         daily.refresh()
         stats.refresh()
+        // The widgets are one of those screens, and the one the player is most
+        // likely to see next — finishing a daily and going straight to the Home
+        // Screen is the common path, not the unusual one.
+        snapshots.publish()
     }
 
     // MARK: - Launch arguments

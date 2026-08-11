@@ -14,6 +14,7 @@ struct SettingsScreen: View {
     var onEraseAll: () -> Void
 
     @State private var isConfirmingErase = false
+    @State private var showsWelcome = false
 
     var body: some View {
         Form {
@@ -75,6 +76,14 @@ struct SettingsScreen: View {
             }
 
             Section {
+                // The welcome sheet is three sentences, one of which is where
+                // notes hide. Nobody remembers that from the day they installed
+                // the app, and there is no other place to look it up.
+                Button("Show the welcome again") { showsWelcome = true }
+                    .accessibilityIdentifier("settings.welcome")
+            }
+
+            Section {
                 Button("Delete all data", role: .destructive) { isConfirmingErase = true }
                     .accessibilityIdentifier("settings.erase")
             } footer: {
@@ -106,6 +115,9 @@ struct SettingsScreen: View {
             Button("Keep it", role: .cancel) {}
         } message: {
             Text("\(stats.stats.totalFinished) solved puzzles and every saved game. This cannot be undone.")
+        }
+        .sheet(isPresented: $showsWelcome) {
+            WelcomeSheet { showsWelcome = false }
         }
     }
 

@@ -1133,14 +1133,53 @@ import, hint and settings screens built and screenshotted in a simulator.
 
 ### Phase 8 — Widgets, haptics, polish · 3–4 days
 
-| ID | Task |
-|---|---|
-| P8-1 | App Group + `DailyStatus` snapshot writer |
-| P8-2 | Home Screen widgets (small/medium; **large on iPad** showing a mini board) |
-| P8-3 | Lock Screen widgets: circular streak, rectangular "Daily ready / done ✓" |
-| P8-4 | Deep links from every widget family |
-| P8-5 | Haptics and sound layer, all muteable |
-| P8-6 | App icon, launch screen, transitions, empty states, onboarding |
+| ID | Task | State |
+|---|---|---|
+| P8-1 | App Group + `DailyStatus` snapshot writer | done |
+| P8-2 | Home Screen widgets (small/medium; **large on iPad** showing a mini board) | done |
+| P8-3 | Lock Screen widgets: circular streak, rectangular "Daily ready / done ✓" | done — plus `accessoryInline` |
+| P8-4 | Deep links from every widget family | done |
+| P8-5 | Haptics and sound layer, all muteable | done |
+| P8-6 | App icon, launch screen, transitions, empty states, onboarding | done |
+
+*Done when:* a widget on the Home Screen shows today's grid and the streak, a tap
+on any family opens the right screen, and both survive midnight without the app
+having run.
+
+**The snapshot is projected forward, not trusted.** A widget's timeline outlives
+the app run that wrote it, and at the next UTC midnight yesterday's snapshot stops
+being true in two ways at once — there is a new puzzle, and the streak is on the
+clock. No process is running to notice. So every read goes through
+`DailyStatus.rolled(to:)`, which drops yesterday's board entirely and applies the
+same one-day grace `Streak.compute` does: solved yesterday and not yet today still
+counts, two days of silence does not. The timeline carries a second entry stamped
+for the coming midnight, so the correct thing is already on screen when the day
+turns.
+
+**One writer for a dated puzzle row.** The snapshot needs today's grid, and the
+obvious way to get it — generate and cache it in the publisher — would have been a
+second writer of a `dateKey` row. `StoredPuzzle` mints a fresh `id`, so two
+writers means two rows for one date, `puzzle(dateKey:)` answering with either, and
+a saved game orphaned by the one it did not pick. `GameLibrary.ensureDaily` is now
+the only writer, re-checks after its `await`, and the publisher is read-only.
+
+**A conflict haptic would have leaked the setting.** Mistake highlighting is
+opt-in, and buzzing on a wrong digit hands back exactly the information someone
+turned it off to avoid. `GameEvent` is emitted by the session — which stays free
+of UIKit, so it still runs in the macOS harness — and a clash only reports as
+`.conflicted` when conflicts are being shown at all.
+
+**The screenshot path was not the played path.** `-prefill` filled the board
+*before* `play` configured the session, so a screenshot run reached the win card
+with no settings applied and no feedback attached — the sound layer was never
+exercised by the one launch argument that reaches a solve. Reordered, and then
+proved by deleting `solve.caf` from the bundle and watching the log say so.
+
+**Verified by running:** 47 assertions over the publisher, rollover, the store,
+deep links and events, run as a macOS binary against the real sources; the app
+hand-built and launched in a simulator to check the welcome sheet, the home empty
+state, the board and the win card; and the sound path proved live by removing an
+asset and seeing it degrade rather than crash.
 
 ### Phase 9 — Accessibility and release · 3 days
 

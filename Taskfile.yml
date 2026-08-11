@@ -33,6 +33,14 @@ vars:
   # sources. See scripts/skip-app-tasks.sh for why this is a script rather than
   # an inline condition. A zero exit means "up to date", so the task is skipped.
   SKIP_APP: ./scripts/skip-app-tasks.sh
+  # Simulator builds are unsigned. `CODE_SIGNING_ALLOWED=NO` alone was enough
+  # until Phase 8: the App Group entitlement is a *provisioned capability*, and
+  # automatic signing on a machine with no profile for it is a build failure
+  # about provisioning rather than about anything in the code. The other two
+  # settings say "there is no identity and none is required" outright. The
+  # entitlement is simply not applied, which is why every read of the shared
+  # container degrades to "no snapshot" instead of trapping.
+  NO_SIGNING: 'CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY=""'
 
 tasks:
   default:
@@ -71,7 +79,7 @@ tasks:
     status:
       - '{{.SKIP_APP}}' 
     cmds:
-      - xcodebuild build -project {{.APP_DIR}}/{{.SCHEME}}.xcodeproj -scheme {{.SCHEME}} -destination "$(./scripts/simulator-destination.sh iphone)" CODE_SIGNING_ALLOWED=NO
+      - xcodebuild build -project {{.APP_DIR}}/{{.SCHEME}}.xcodeproj -scheme {{.SCHEME}} -destination "$(./scripts/simulator-destination.sh iphone)" {{.NO_SIGNING}}
 
   test:
     desc: Run all tests
@@ -96,8 +104,8 @@ tasks:
     status:
       - '{{.SKIP_APP}}' 
     cmds:
-      - xcodebuild test -project {{.APP_DIR}}/{{.SCHEME}}.xcodeproj -scheme {{.SCHEME}} -destination "$(./scripts/simulator-destination.sh iphone)" CODE_SIGNING_ALLOWED=NO
-      - xcodebuild test -project {{.APP_DIR}}/{{.SCHEME}}.xcodeproj -scheme {{.SCHEME}} -destination "$(./scripts/simulator-destination.sh ipad)" CODE_SIGNING_ALLOWED=NO
+      - xcodebuild test -project {{.APP_DIR}}/{{.SCHEME}}.xcodeproj -scheme {{.SCHEME}} -destination "$(./scripts/simulator-destination.sh iphone)" {{.NO_SIGNING}}
+      - xcodebuild test -project {{.APP_DIR}}/{{.SCHEME}}.xcodeproj -scheme {{.SCHEME}} -destination "$(./scripts/simulator-destination.sh ipad)" {{.NO_SIGNING}}
 
   bench:
     desc: Run the generation performance harness (Gate G1) and print the distribution
@@ -105,6 +113,21 @@ tasks:
       SUDOKU_BENCH: "1"
     cmds:
       - swift test {{.SWIFT_FLAGS}} {{.TEST_FLAGS}} -c release --filter PerformanceTests
+
+  typecheck:
+    desc: Type-check app and widget sources against the simulator SDK (no Xcode build needed)
+    cmds:
+      - ./scripts/typecheck.sh
+
+  sounds:
+    desc: Regenerate the sound effects into SudokuApp/Resources/Sounds
+    cmds:
+      - swift scripts/make-sounds.swift
+
+  icon:
+    desc: Regenerate the app icon from the web app's logo
+    cmds:
+      - ./scripts/make-icon.sh {{.WEB_REPO}}
 
   lint:
     desc: Lint Swift sources

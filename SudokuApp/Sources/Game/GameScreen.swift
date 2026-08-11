@@ -117,6 +117,11 @@ struct GameScreen: View {
             Label(session.formattedTime, systemImage: "clock")
                 .font(.subheadline.monospacedDigit())
                 .foregroundStyle(.secondary)
+                // Digits roll rather than snap. A clock that jumps every second
+                // in the corner of a puzzle is a thing the eye keeps going back
+                // to; one that rolls is a thing it stops noticing.
+                .contentTransition(.numericText())
+                .animation(reduceMotion ? nil : .default, value: session.elapsedSeconds)
                 .accessibilityLabel("Elapsed time \(session.formattedTime)")
 
             Spacer()

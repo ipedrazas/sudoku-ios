@@ -31,13 +31,20 @@ enum PuzzleSharing {
     }
 
     /// A shared puzzle, ready to play.
+    static func generatedPuzzle(from url: URL) -> GeneratedPuzzle? {
+        guard let code = ShareCode.code(from: url) else { return nil }
+        return generatedPuzzle(from: code)
+    }
+
+    /// The same, from a code already extracted — which is the shape a
+    /// `DeepLink` carries, having done the URL parsing once already.
     ///
     /// The solution is computed here, not deferred: hints and mistake detection
     /// are both diffs against it. A code that decodes to a grid with no unique
     /// solution is rejected — the sender may have an older or hand-made code,
     /// and half-importing it would produce a game whose hints lie.
-    static func generatedPuzzle(from url: URL) -> GeneratedPuzzle? {
-        guard let grid = puzzle(from: url) else { return nil }
+    static func generatedPuzzle(from code: String) -> GeneratedPuzzle? {
+        guard let grid = try? ShareCode.decode(code) else { return nil }
         guard Solver.countSolutions(grid, limit: 2) == 1, let solution = Solver.solve(grid) else { return nil }
 
         let tier = Rater.rate(grid)
