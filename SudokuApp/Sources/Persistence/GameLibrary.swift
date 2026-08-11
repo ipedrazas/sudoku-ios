@@ -170,6 +170,26 @@ final class GameLibrary {
         refresh()
     }
 
+    /// Empties the store, detaching whatever was being played first.
+    ///
+    /// Order matters: a session left attached would autosave itself back into
+    /// the store that was just emptied, which is a confusing way to discover
+    /// that "delete everything" did not.
+    func eraseEverything() {
+        autosaveTask?.cancel()
+        autosaveTask = nil
+        session?.didChange = nil
+        session = nil
+        storedPuzzle = nil
+
+        do {
+            try repository.deleteAll()
+        } catch {
+            lastError = error
+        }
+        refresh()
+    }
+
     // MARK: - Tracking
 
     private func track(_ session: GameSession, puzzle: StoredPuzzle) {

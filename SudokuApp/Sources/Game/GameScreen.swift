@@ -12,6 +12,7 @@ struct GameScreen: View {
 
     @State private var hint: Hint?
     @State private var hintLevel: HintLevel = .nudge
+    @State private var sharedImage: Image?
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.horizontalSizeClass) private var sizeClass
 
@@ -39,7 +40,12 @@ struct GameScreen: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar { toolbarContent }
         .sheet(item: $hint) { hint in
-            HintSheet(hint: hint, level: $hintLevel, session: session) { self.hint = nil }
+            HintSheet(hint: hint, level: $hintLevel, session: session, onDismiss: dismissHint)
+        }
+        .sheet(isPresented: Binding(get: { sharedImage != nil }, set: { if !$0 { sharedImage = nil } })) {
+            if let sharedImage {
+                ShareImageSheet(image: sharedImage, difficulty: session.difficulty)
+            }
         }
         .overlay {
             if session.showsWinSummary {
@@ -140,16 +146,20 @@ struct GameScreen: View {
                     session.autoFillNotes()
                 }
                 Divider()
-                // Settings has no screen of its own until P7-6; until then these
-                // live where they are used rather than being unreachable.
-                Toggle("Highlight mistakes", isOn: $session.showsConflicts)
-                Picker("Input", selection: $session.inputMode) {
-                    ForEach(InputMode.allCases, id: \.self) { Text($0.name).tag($0) }
+                // Play settings moved to the Settings screen in P7-6. What is
+                // left here is what belongs to *this* puzzle rather than to the
+                // app: restarting it, marking it up, and passing it on.
+                if let link = PuzzleSharing.url(for: session.puzzle.puzzle) {
+                    ShareLink(
+                        item: link,
+                        subject: Text("A \(session.difficulty.name) Sudoku"),
+                        message: Text("Same puzzle, no account needed.")
+                    ) {
+                        Label("Share this puzzle", systemImage: "square.and.arrow.up")
+                    }
+                    .accessibilityIdentifier("control.share")
                 }
-                Picker("Offer to pause after", selection: $session.inactivityMinutes) {
-                    Text("Never").tag(0)
-                    ForEach([1, 3, 5, 10], id: \.self) { Text("^[\($0) minute](inflect: true)").tag($0) }
-                }
+                Button("Share as image", systemImage: "photo") { sharedImage = boardImage() }
             } label: {
                 Image(systemName: "ellipsis.circle")
             }
@@ -171,7 +181,21 @@ struct GameScreen: View {
 
     private func requestHint() {
         hintLevel = .nudge
-        hint = session.hint(at: .nudge)
+        let hint = session.hint(at: .nudge)
+        // The board lights up from the first level, not the third. A nudge that
+        // names a technique without saying where is a riddle; a nudge that names
+        // it and points is a hint.
+        session.show(hint)
+        self.hint = hint
+    }
+
+    private func boardImage() -> Image? {
+        BoardImage.render(session.puzzle.puzzle, difficulty: session.difficulty)
+    }
+
+    private func dismissHint() {
+        hint = nil
+        session.dismissHint()
     }
 
     /// The celebration is a fixed 2 s in the web app; here the view owns the
@@ -218,7 +242,7 @@ private struct HintSheet: View {
                         session.applyHint(hint)
                         onDismiss()
                     } label: {
-                        Label("Fill it in", systemImage: "wand.and.stars")
+                        Label(applyLabel, systemImage: applySymbol)
                             .frame(maxWidth: .infinity)
                     }
                     .buttonStyle(.borderedProminent)
@@ -234,7 +258,11 @@ private struct HintSheet: View {
                 }
             }
         }
+        // Short enough that the board — and the cells the hint just lit up —
+        // stay on screen behind it. A hint that hides what it is pointing at is
+        // a worse hint.
         .presentationDetents([.height(240)])
+        .presentationBackgroundInteraction(.enabled(upThrough: .height(240)))
     }
 
     private var nextLabel: String {
@@ -246,6 +274,16 @@ private struct HintSheet: View {
         }
     }
 
+    /// A mistake hint carries a placement of 0 — "this should not say what it
+    /// says" — so the button offers to erase rather than to fill in.
+    private var isMistake: Bool {
+        if case .mistake = hint.outcome { return true }
+        return false
+    }
+
+    private var applyLabel: String { isMistake ? "Erase it" : "Fill it in" }
+    private var applySymbol: String { isMistake ? "eraser" : "wand.and.stars" }
+
     private func escalate() {
         let previous = level
         guard let next = HintLevel(rawValue: level.rawValue + 1) else { return }
@@ -256,4 +294,42 @@ private struct HintSheet: View {
 
 extension Hint: @retroactive Identifiable {
     public var id: String { "\(outcome)" }
+}
+
+// MARK: - Share as image
+
+/// A rendered board, ready to send.
+///
+/// Shown before sharing rather than handed straight to the share sheet: an image
+/// you have not seen is one you might not want to send.
+private struct ShareImageSheet: View {
+    let image: Image
+    let difficulty: Difficulty
+
+    var body: some View {
+        NavigationStack {
+            VStack(spacing: 16) {
+                image
+                    .resizable()
+                    .scaledToFit()
+                    .frame(maxWidth: 360)
+                    .shadow(radius: 8, y: 4)
+
+                ShareLink(
+                    item: image,
+                    preview: SharePreview("A \(difficulty.name) Sudoku", image: image)
+                ) {
+                    Label("Share", systemImage: "square.and.arrow.up")
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 4)
+                }
+                .buttonStyle(.borderedProminent)
+                .accessibilityIdentifier("share.image")
+            }
+            .padding()
+            .navigationTitle("Share as image")
+            .navigationBarTitleDisplayMode(.inline)
+        }
+        .presentationDetents([.medium, .large])
+    }
 }

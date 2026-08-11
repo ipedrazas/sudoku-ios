@@ -223,7 +223,10 @@ extension Hint {
             case .nudge: return "There's a cell with only one possible digit."
             case .locate: return "Look at \(cell) — only one digit fits."
             case .explain:
-                return "\(cell) is the only digit not already in its row, column or box."
+                // A cell is not a digit. The earlier wording read "R4C2 is the
+                // only digit not already in its row, column or box", which is a
+                // category error and, worse, describes a different technique.
+                return "Every digit but one already appears in \(cell)'s row, column or box, so that one is left."
             case .reveal: return "\(cell) is \(digit)."
             }
 

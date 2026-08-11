@@ -52,6 +52,7 @@ struct BoardView: View {
         .frame(maxWidth: .infinity)
         .aspectRatio(1, contentMode: .fit)
         .overlay(cellBorder)
+        .overlay(state.hintOutline)
         .overlay(selectionRing(isSelected: state.isSelected))
         // Blind mode masks the contents but keeps the cell tappable: the point
         // is to stop the player reading the line, not to lock them out of it.
@@ -122,6 +123,11 @@ private struct CellState {
     let isBlinded: Bool
     let isCelebrating: Bool
     let isIncorrect: Bool
+    /// The cell a hint is actually about.
+    let isHintSubject: Bool
+    /// A cell in a unit the hint is reasoning over — the row a locked candidate
+    /// is claimed on, the two rows of an X-wing.
+    let isHintContext: Bool
 
     init(session: GameSession, cell: CellRef) {
         isGiven = session.isGiven(cell)
@@ -131,6 +137,8 @@ private struct CellState {
         isBlinded = session.blindedCells.contains(cell)
         isCelebrating = session.celebratingUnits.contains { $0.cells.contains(cell) }
         isIncorrect = session.incorrectUnits.contains { $0.cells.contains(cell) }
+        isHintSubject = session.hintCells.contains(cell)
+        isHintContext = !isHintSubject && session.hintUnitCells.contains(cell)
     }
 
     /// Givens read as the puzzle; entries read as the player's own work.
@@ -140,7 +148,11 @@ private struct CellState {
     }
 
     @ViewBuilder var background: some View {
-        if isSelected {
+        // A hint outranks the ambient highlights: it was asked for, and the
+        // whole point of showing it is that the eye goes there.
+        if isHintSubject {
+            Color.yellow.opacity(0.45)
+        } else if isSelected {
             Color.accentColor.opacity(0.22)
         } else if isConflict {
             Color.red.opacity(0.14)
@@ -148,10 +160,21 @@ private struct CellState {
             Color.green.opacity(0.3)
         } else if isIncorrect {
             Color.orange.opacity(0.12)
+        } else if isHintContext {
+            Color.yellow.opacity(0.16)
         } else if isHighlighted {
             Color.accentColor.opacity(0.1)
         } else {
             Color.clear
+        }
+    }
+
+    /// Colour is never the only signal — the cell a hint is about also gets an
+    /// outline, so it is findable without seeing yellow.
+    @ViewBuilder var hintOutline: some View {
+        if isHintSubject {
+            RoundedRectangle(cornerRadius: 3)
+                .strokeBorder(Color.orange, lineWidth: 2)
         }
     }
 }

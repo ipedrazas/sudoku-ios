@@ -370,9 +370,42 @@ final class GameSession {
         return hint
     }
 
-    /// Applies a hint's placement, if it has one.
+    /// The hint on screen, so the board can show what the words are about.
+    ///
+    /// Cleared by the next mutation: a hint describes one position, and the
+    /// moment the position changes the highlight is pointing at history.
+    private(set) var activeHint: Hint?
+
+    func show(_ hint: Hint) {
+        activeHint = hint
+    }
+
+    func dismissHint() {
+        activeHint = nil
+    }
+
+    /// Cells the current hint wants lit.
+    var hintCells: Set<CellRef> {
+        Set(activeHint?.cells ?? [])
+    }
+
+    /// Cells belonging to a unit the current hint wants lit — the row a locked
+    /// candidate is claimed on, the two rows of an X-wing.
+    var hintUnitCells: Set<CellRef> {
+        guard let units = activeHint?.units, !units.isEmpty else { return [] }
+        return Set(units.flatMap(\.cells))
+    }
+
+    /// Acts on a hint: places its digit, or erases the mistake it found.
+    ///
+    /// The erase case is the one worth spelling out. A mistake hint carries a
+    /// placement of digit 0 — "this cell should not say what it says" — and an
+    /// earlier version guarded `digit != 0` and so did nothing at all for
+    /// exactly the hint the player most needs acted on.
     func applyHint(_ hint: Hint) {
-        guard let placement = hint.placement, placement.digit != 0 else { return }
+        guard let placement = hint.placement else { return }
+        guard !isGiven(placement.cell) else { return }
+
         mutate {
             board[placement.cell] = placement.digit
             pencil[placement.cell.index] = 0
@@ -543,6 +576,9 @@ final class GameSession {
 
     private func boardDidChange() {
         version += 1
+        // A hint describes one position. Once the position moves, its highlight
+        // is pointing at history.
+        activeHint = nil
         detectNewlyCompletedUnits()
 
         if isSolved, finishedAt == nil {

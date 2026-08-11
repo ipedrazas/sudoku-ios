@@ -74,6 +74,18 @@ targets:
         # Two puzzles side by side on iPad. Cheap, because GameSession is
         # per-scene state and never a global singleton.
         UIRequiresFullScreen: false
+        # The custom scheme carries a whole puzzle in ~46 characters, so a
+        # shared link needs nothing to exist on the other end but the app.
+        # The Universal Link form (§12.4) additionally needs an
+        # apple-app-site-association file on the domain and an
+        # associated-domains entitlement, which is why it is not here yet —
+        # the scheme ships and works regardless, and the app already decodes
+        # both shapes on the way in.
+        CFBundleURLTypes:
+          - CFBundleURLName: dev.andcake.sudoku
+            CFBundleTypeRole: Editor
+            CFBundleURLSchemes:
+              - sudokuandcake
 
   SudokuAppTests:
     type: bundle.unit-test
