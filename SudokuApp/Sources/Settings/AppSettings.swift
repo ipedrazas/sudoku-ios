@@ -69,6 +69,14 @@ final class AppSettings {
     var reminderEnabled: Bool { didSet { write(reminderEnabled, .reminderEnabled) } }
     var reminderHour: Int { didSet { write(reminderHour, .reminderHour) } }
 
+    // MARK: - Onboarding
+
+    /// Whether the welcome sheet has been seen. Written the moment it is shown
+    /// rather than when it is dismissed: a first launch that is force-quit
+    /// halfway through the sheet has still had its introduction, and being
+    /// introduced to an app twice is worse than not at all.
+    var hasSeenWelcome: Bool { didSet { write(hasSeenWelcome, .hasSeenWelcome) } }
+
     private let defaults: UserDefaults
 
     /// The suite is injectable so tests get their own, rather than editing the
@@ -86,6 +94,7 @@ final class AppSettings {
         theme = (defaults.string(forKey: Key.theme.rawValue).flatMap(ThemePreference.init(rawValue:))) ?? .system
         reminderEnabled = defaults.object(forKey: Key.reminderEnabled.rawValue) as? Bool ?? false
         reminderHour = defaults.object(forKey: Key.reminderHour.rawValue) as? Int ?? 19
+        hasSeenWelcome = defaults.object(forKey: Key.hasSeenWelcome.rawValue) as? Bool ?? false
     }
 
     /// The inactivity choices the web app offers (`lib/settings.ts:34`), plus
@@ -107,6 +116,7 @@ final class AppSettings {
         // Unchanged from Phase 5, so an upgrade keeps the player's reminder.
         case reminderEnabled = "dailyReminderEnabled"
         case reminderHour = "dailyReminderHour"
+        case hasSeenWelcome
     }
 
     private func write(_ value: Any, _ key: Key) {

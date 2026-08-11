@@ -75,26 +75,7 @@ final class GameLibrary {
     /// Generation is deterministic, so a store that has never seen this date
     /// produces the same grid as one that has.
     func daily(for date: Date, showsConflicts: Bool = true) async -> GameSession {
-        let dateKey = DailyPuzzle.dateKey(for: date)
-
-        let puzzle: StoredPuzzle
-        if let cached = try? repository.puzzle(dateKey: dateKey) {
-            puzzle = cached
-        } else {
-            // Carving is solid CPU work — a medium puzzle is single-digit
-            // milliseconds on this machine but several times that on the oldest
-            // device worth supporting, and none of it belongs on the main actor.
-            let generated = await Task.detached(priority: .userInitiated) {
-                DailyPuzzle.generate(for: date)
-            }.value
-
-            puzzle = StoredPuzzle(generated: generated, source: .daily, dateKey: dateKey)
-            do {
-                try repository.save(puzzle: puzzle)
-            } catch {
-                lastError = error
-            }
-        }
+        let puzzle = await ensureDaily(for: date)
 
         let session = GameSession(
             id: puzzle.id,
@@ -104,6 +85,45 @@ final class GameLibrary {
         )
         track(session, puzzle: puzzle)
         return session
+    }
+
+    /// The stored daily for a date, generating and caching it if this is the
+    /// first time anyone has asked.
+    ///
+    /// The **only** writer of a dated puzzle row. `StoredPuzzle` mints a fresh
+    /// `id`, so a second place that generated-and-saved a daily would leave two
+    /// rows for one date key, `puzzle(dateKey:)` would answer with either, and a
+    /// game saved against one of them would be orphaned by the other. That is
+    /// why the widget snapshot publisher reads this state and never creates it.
+    ///
+    /// Called at launch as well as on open, so today's puzzle exists before the
+    /// player asks for it: the widget can then show the real grid, and tapping
+    /// "Daily" is instant rather than a carve.
+    @discardableResult
+    func ensureDaily(for date: Date) async -> StoredPuzzle {
+        let dateKey = DailyPuzzle.dateKey(for: date)
+        if let cached = try? repository.puzzle(dateKey: dateKey) { return cached }
+
+        // Carving is solid CPU work — a medium puzzle is single-digit
+        // milliseconds on this machine but several times that on the oldest
+        // device worth supporting, and none of it belongs on the main actor.
+        let generated = await Task.detached(priority: .userInitiated) {
+            DailyPuzzle.generate(for: date)
+        }.value
+
+        // Between the check and here the main actor was given up, so another
+        // caller may have generated the same day meanwhile. Generation is
+        // deterministic, so the grids are identical — but the ids are not, and
+        // keeping the one already in the store is what stops the duplicate.
+        if let raced = try? repository.puzzle(dateKey: dateKey) { return raced }
+
+        let puzzle = StoredPuzzle(generated: generated, source: .daily, dateKey: dateKey)
+        do {
+            try repository.save(puzzle: puzzle)
+        } catch {
+            lastError = error
+        }
+        return puzzle
     }
 
     /// A session picked up exactly where it was left.

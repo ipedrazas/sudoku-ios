@@ -6,10 +6,10 @@ name: SudokuApp
 #
 # Targets are added as the phases that need them land. XcodeGen refuses a spec
 # whose source directories are missing, so declaring a widget target before
-# Phase 8 writes one would break every build in the meantime. The widget target,
-# the App Group entitlement and the associated-domain entitlement arrive with
-# the features that need them (Phases 7 and 8) — the decisions behind them are
-# settled and recorded in §12 of the plan.
+# Phase 8 writes one would break every build in the meantime. The widget target
+# and the App Group entitlement arrive here in Phase 8; the associated-domain
+# entitlement still waits on the domain (§12.4). The decisions behind all three
+# are settled and recorded in §12 of the plan.
 
 options:
   bundleIdPrefix: dev.andcake
@@ -25,6 +25,12 @@ settings:
     SWIFT_TREAT_WARNINGS_AS_ERRORS: true
     ENABLE_USER_SCRIPT_SANDBOXING: true
     CODE_SIGN_STYLE: Automatic
+    # The App Group is a provisioned capability: without a team, automatic
+    # signing cannot produce a profile that carries it, and the container comes
+    # back nil at run time. CI still builds with CODE_SIGNING_ALLOWED=NO, where
+    # entitlements are not applied at all — which is exactly why every read of
+    # the shared container degrades to "no snapshot" rather than trapping.
+    DEVELOPMENT_TEAM: TQ86N6HVWY
     MARKETING_VERSION: "1.0"
     CURRENT_PROJECT_VERSION: "1"
 
@@ -45,9 +51,13 @@ targets:
     dependencies:
       - package: SudokuKit
         product: SudokuKit
+      # Embeds the extension in the app bundle. An extension that is built but
+      # not embedded installs nothing and shows up in no gallery.
+      - target: SudokuWidgets
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: dev.andcake.sudoku
+        CODE_SIGN_ENTITLEMENTS: Resources/SudokuApp.entitlements
     # These live in the plist itself, not as INFOPLIST_KEY_* build settings.
     # Supplying an INFOPLIST_FILE turns GENERATE_INFOPLIST_FILE off, and the
     # INFOPLIST_KEY_* settings only feed the *generated* plist — so they were
@@ -59,8 +69,13 @@ targets:
       properties:
         CFBundleDisplayName: Sudoku and Cake
         ITSAppUsesNonExemptEncryption: false
-        # An empty dictionary is enough to opt into the full screen.
-        UILaunchScreen: {}
+        # An empty dictionary is enough to opt into the full screen; the colour
+        # is what stops the launch being a white rectangle in front of a dark
+        # app. It matches `systemGroupedBackground` — the colour behind the home
+        # screen's list — so the launch does not visibly change colour the
+        # instant the first view appears.
+        UILaunchScreen:
+          UIColorName: LaunchBackground
         UIApplicationSupportsIndirectInputEvents: true
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait
@@ -86,6 +101,36 @@ targets:
             CFBundleTypeRole: Editor
             CFBundleURLSchemes:
               - sudokuandcake
+
+  # The widget process. Lives outside SudokuApp/ because it is a peer of the app
+  # rather than part of it, and because `Sources/Shared` being pulled in from
+  # here is meant to look like what it is: a contract between two processes.
+  SudokuWidgets:
+    type: app-extension
+    platform: iOS
+    deviceFamily: [1, 2]
+    sources:
+      - path: ../SudokuWidgets
+      # Compiled into both targets rather than shipped as a framework. Two files
+      # duplicated at build time beats an embedded framework the extension has
+      # to load before it can draw anything.
+      - path: Sources/Shared
+    dependencies:
+      # For the UTC day arithmetic and nothing else. Duplicating `DailyPuzzle`'s
+      # idea of what a day is — the one thing both processes must agree on — to
+      # save a link is a trade in the wrong direction.
+      - package: SudokuKit
+        product: SudokuKit
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: dev.andcake.sudoku.widgets
+        CODE_SIGN_ENTITLEMENTS: ../SudokuWidgets/SudokuWidgets.entitlements
+    info:
+      path: ../SudokuWidgets/Info.plist
+      properties:
+        CFBundleDisplayName: Sudoku and Cake
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
 
   SudokuAppTests:
     type: bundle.unit-test
