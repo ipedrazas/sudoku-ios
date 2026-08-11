@@ -111,28 +111,51 @@ Required: **6.9" iPhone (1320×2868)** and, because the app ships universal
 (`deviceFamily: [1, 2]`), **13" iPad (2064×2752)**. The App Store accepts one
 set per device class and scales down, so those two sizes cover every device.
 
-Five are captured in `screenshots/`, and they are the right *shots*:
+Five are captured in `screenshots/iphone-6.3/`, and they are the right *shots*:
 
-| # | Screen | Caption |
-|---|---|---|
-| 1 | Home — daily, resume, the difficulty ladder | Every puzzle solvable by logic alone |
-| 2 | A board mid-solve with pencil marks | Notes, hints and undo where you expect them |
-| 3 | A hint naming the technique | Hints that teach, not hints that tell |
-| 4 | Settings | It plays the way you want it to |
-| 5 | The win card with achievements | Solved — and it remembers |
+| # | File | Screen | Caption |
+|---|---|---|---|
+| 1 | `1-home.png` | Home — daily, resume, the difficulty ladder | Every puzzle solvable by logic alone |
+| 2 | `2-board.png` | A board mid-solve with pencil marks | Notes, hints and undo where you expect them |
+| 3 | `3-hint.png` | A hint naming the technique | Hints that teach, not hints that tell |
+| 4 | `4-settings.png` | Settings | It plays the way you want it to |
+| 5 | `5-win.png` | The win card with achievements | Solved — and it remembers |
 
-**They are the wrong size.** All five are 1206×2622, which is the 6.3" iPhone 17
-Pro, not the 6.9" App Store Connect asks for. And there is no iPad set at all.
-Both need recapturing before submission:
+**They are the wrong size.** All five are 1206×2622 — the 6.3" iPhone 17 Pro,
+which is what `scripts/screenshot.sh` picks by default and what the simulator's
+own ⌘S produces on that device. App Store Connect wants 6.9", and a universal
+app owes it a 13" iPad set too. Hence the folder per device class:
 
-| Device | Simulator | Produces |
-|---|---|---|
-| 6.9" iPhone | iPhone 17 Pro Max | 1320×2868 ✅ verified |
-| 13" iPad | iPad Pro 13-inch | 2064×2752 ✅ verified |
+| Folder | Device | `DEVICE=` | Size | State |
+|---|---|---|---|---|
+| `iphone-6.3/` | iPhone 17 Pro | *(default)* | 1206×2622 | ✅ captured, optional |
+| `iphone-6.9/` | iPhone 17 Pro Max | `"iPhone 17 Pro Max"` | 1320×2868 | ❌ **required** |
+| `ipad-13/` | iPad Pro 13-inch | `"iPad Pro 13"` | 2064×2752 | ❌ **required** |
 
-Capture with `scripts/screenshot.sh`, which drives the app through `xcodebuild`
-— so, like the upload, it has to be run outside the sandbox. It takes
-`CONTENT_SIZE` and `APPEARANCE` if a large-type or dark variant is wanted.
+Every size above was verified against the actual simulator.
+
+### Capturing a set
+
+`scripts/screenshot.sh` builds through `xcodebuild`, so — like the upload — it
+has to run outside the nono sandbox.
+
+```bash
+DEV="iPhone 17 Pro Max"
+OUT=screenshots/iphone-6.9
+
+DEVICE="$DEV" ./scripts/screenshot.sh $OUT/1-home.png     iphone -skipWelcome -inMemoryStore
+DEVICE="$DEV" ./scripts/screenshot.sh $OUT/2-board.png    iphone -skipWelcome -inMemoryStore -startGame medium -prefill 38
+DEVICE="$DEV" ./scripts/screenshot.sh $OUT/4-settings.png iphone -skipWelcome -inMemoryStore
+DEVICE="$DEV" ./scripts/screenshot.sh $OUT/5-win.png      iphone -skipWelcome -inMemoryStore -startGame easy -prefill 0
+```
+
+Swap `DEV="iPad Pro 13"`, `iphone` → `ipad` and `OUT` for the iPad set.
+
+Two of the five need a hand. `3-hint.png` requires tapping **Hint**, and
+`4-settings.png` requires navigating to Settings — no launch argument opens
+either, so take those with ⌘S in the simulator the script leaves running. That
+is how the existing five were captured, and it is fine: this is a handful of
+images a couple of times a year, not a pipeline worth building.
 
 ## What is not here, and why
 

@@ -13,6 +13,17 @@
 #   CONTENT_SIZE        a Dynamic Type category, e.g.
 #                       accessibility-extra-extra-extra-large
 #   APPEARANCE          light | dark
+#   DEVICE              a simulator model name, passed through to
+#                       simulator-destination.sh
+#
+# DEVICE matters for App Store screenshots and almost nothing else. Without it
+# the newest plain model wins — iPhone 17 Pro, which captures at 1206x2622 — and
+# App Store Connect wants 6.9" iPhone and 13" iPad:
+#
+#   DEVICE="iPhone 17 Pro Max"  ->  1320x2868   (6.9", required)
+#   DEVICE="iPad Pro 13"        ->  2064x2752   (13", required for a universal app)
+#
+# Both sizes verified against those simulators.
 #
 # CONTENT_SIZE is how Phase 9's P9-3 was actually checked, and it is worth
 # re-running whenever a layout changes: at the largest category the control bar

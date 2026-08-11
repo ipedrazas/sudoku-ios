@@ -17,41 +17,36 @@ the project's actual configuration, but the first run is the first run.
 | App Group `group.dev.andcake.sudoku` | ✅ registered | developer portal |
 | App ID `dev.andcake.sudoku` | ✅ App Groups enabled, 1 assigned | developer portal |
 | App ID `dev.andcake.sudoku.widgets` | ✅ App Groups enabled, 1 assigned | developer portal |
-| Apple **Distribution** certificate | ❌ **missing** | see §1 |
-| App record in App Store Connect | ❌ **not created** | see §2 |
+| Apple **Distribution** certificate | ✅ `Apple Distribution: Ivan Pedrazas (TQ86N6HVWY)` | §1 |
+| App record in App Store Connect | ✅ app `6800377712` | §2 |
+| 6.9" and 13" screenshots | ❌ **wrong size / missing** | see the end |
 | Privacy policy page | ❌ **does not exist** | `sudoku.andcake.dev/privacy` |
 
-The first two rows were done in the portal already. The last three are what
-stands between you and an upload.
+Provisioning and the app record are done, so §4 onward will run. The two
+outstanding rows both block *submission* rather than the archive itself — you
+can build and upload to TestFlight today and sort them out before review.
 
 ---
 
-## 1. The distribution certificate
+## 1. The distribution certificate — done
 
-`security find-identity -v -p codesigning` currently lists exactly one identity:
+An **Apple Development** certificate signs builds for devices you own; it cannot
+sign an App Store submission. That needs an **Apple Distribution** certificate,
+made in Xcode → Settings → Accounts → **Manage Certificates → + → Apple
+Distribution**.
 
-```
-1) 0D8C0979… "Apple Development: ipedrazas@gmail.com (59Z9948DZC)"
-```
-
-An **Apple Development** certificate signs builds for devices you own. It cannot
-sign an App Store submission — that needs an **Apple Distribution** certificate,
-and there isn't one on this machine.
-
-The easy way is to let Xcode make it. Open Xcode → Settings → Accounts, sign in
-with the Apple ID that owns team `TQ86N6HVWY`, select the team, and press
-**Manage Certificates → + → Apple Distribution**. Every command below then passes
-`-allowProvisioningUpdates`, which lets Xcode create and download the matching
-App Store provisioning profiles for both the app and the widget extension
-without any of it being made by hand.
-
-Check it took:
+Confirm it whenever a build starts complaining about signing:
 
 ```bash
 security find-identity -v -p codesigning | grep Distribution
+#   1) 2234B5AF… "Apple Distribution: Ivan Pedrazas (TQ86N6HVWY)"
 ```
 
-You want a line saying `Apple Distribution: Ivan Pedrazas (TQ86N6HVWY)`.
+The team in parentheses must match `DEVELOPMENT_TEAM` in `project.yml`. It does.
+
+Every command below passes `-allowProvisioningUpdates`, which lets Xcode create
+and download the App Store provisioning profiles for both the app and the widget
+extension rather than either being made by hand.
 
 > **Headless alternative.** If you would rather not sign Xcode in — for CI, say
 > — create an App Store Connect API key (Users and Access → Integrations → keys,
@@ -61,27 +56,18 @@ You want a line saying `Apple Distribution: Ivan Pedrazas (TQ86N6HVWY)`.
 
 ---
 
-## 2. The App Store Connect record
+## 2. The App Store Connect record — done
 
 The bundle ID being registered in the developer portal is not the same thing as
-the app existing in App Store Connect. Upload fails without the record, with an
-error about the bundle ID not being found that reads like a provisioning problem
-and is not one.
+the app existing in App Store Connect. Without the record an upload fails with an
+error about the bundle ID not being found, which reads like a provisioning
+problem and is not one.
 
-At [appstoreconnect.apple.com](https://appstoreconnect.apple.com) → Apps → **+**:
+The record exists: **app `6800377712`**, at
+<https://appstoreconnect.apple.com/apps/6800377712/distribution/ios/version/inflight>.
 
-| Field | Value |
-|---|---|
-| Platform | iOS |
-| Name | Sudoku and Cake |
-| Primary language | English (U.K.) |
-| Bundle ID | `dev.andcake.sudoku` |
-| SKU | `dev-andcake-sudoku` |
-| User access | Full access |
-
-The rest of the listing — subtitle, description, keywords, privacy answers,
-review notes — is written out in [`store-listing.md`](store-listing.md) ready to
-paste.
+The listing itself — subtitle, description, keywords, privacy answers, review
+notes — is written out in [`store-listing.md`](store-listing.md) ready to paste.
 
 ---
 
@@ -247,9 +233,9 @@ TestFlight, and failures arrive by email rather than in the terminal.
 
 | Symptom | Cause |
 |---|---|
-| `No signing certificate "iOS Distribution" found` | §1 — no distribution certificate |
+| `No signing certificate "iOS Distribution" found` | §1 — the distribution certificate is missing or belongs to another team |
 | `Provisioning profile ... doesn't include the com.apple.security.application-groups entitlement` | The App Group is registered but not *assigned* to that App ID. Enabling the capability is not enough; the group has to be ticked in the App ID's **Configure** sheet until it reads "Enabled App Groups (1)". Both App IDs here already read that. |
-| `The bundle identifier cannot be found` on upload | §2 — no App Store Connect record |
+| `The bundle identifier cannot be found` on upload | §2 — the App Store Connect record is missing, or the bundle ID does not match it |
 | `The provided entity includes an attribute with a value that has already been used` | Build number not incremented — §3 |
 | Archive succeeds, widgets blank on device | The entitlement did not make it into the signature. Check it with the `codesign -d --entitlements` command in §4 *before* uploading. |
 | `sandbox_apply: Operation not permitted` | You are inside nono. Every command here needs a normal shell. |
@@ -258,20 +244,19 @@ TestFlight, and failures arrive by email rather than in the terminal.
 
 ## Screenshots
 
-Five are in `screenshots/`, all **1206×2622** — the 6.3" iPhone 17 Pro. Two gaps
-to close before submission:
+Five are captured in `screenshots/iphone-6.3/` and they are the right shots at
+the wrong size: 1206×2622 is the 6.3" iPhone 17 Pro, which is both what the
+simulator's ⌘S gives you on that device and what `scripts/screenshot.sh` picks
+by default. App Store Connect wants **6.9" (1320×2868)**, and a universal app
+owes it a **13" iPad (2064×2752)** set as well.
 
-1. **App Store Connect's required iPhone size is 6.9", which is 1320×2868.**
-   Capture the same five on an **iPhone 17 Pro Max** simulator, which produces
-   exactly that (verified). The 6.3" set can stay as an optional size.
-2. **There are no iPad screenshots**, and the app ships as universal
-   (`deviceFamily: [1, 2]`), so App Store Connect asks for a 13" iPad set as
-   well — **2064×2752**, which is what an **iPad Pro 13-inch** simulator
-   produces (verified).
-
-`scripts/screenshot.sh` drives this, and takes `CONTENT_SIZE` and `APPEARANCE`
-if you want the accessibility or dark variants:
+`DEVICE` selects the model:
 
 ```bash
-./scripts/screenshot.sh screenshots/6.9-board.png iphone -startGame medium -skipWelcome
+DEVICE="iPhone 17 Pro Max" ./scripts/screenshot.sh screenshots/iphone-6.9/1-home.png \
+    iphone -skipWelcome -inMemoryStore
 ```
+
+The exact commands for a whole set are in
+[`store-listing.md`](store-listing.md#capturing-a-set), along with which two
+shots still need a manual ⌘S.
