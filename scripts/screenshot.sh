@@ -17,13 +17,18 @@
 #                       simulator-destination.sh
 #
 # DEVICE matters for App Store screenshots and almost nothing else. Without it
-# the newest plain model wins — iPhone 17 Pro, which captures at 1206x2622 — and
-# App Store Connect wants 6.9" iPhone and 13" iPad:
+# the newest plain model wins — iPhone 17 Pro, which captures at 1206x2622 and
+# fits no upload slot at all. App Store Connect accepts only the exact
+# dimensions it prints above each drop zone, so read them off the page: what a
+# simulator produces does not tell you what a slot accepts.
 #
-#   DEVICE="iPhone 17 Pro Max"  ->  1320x2868   (6.9", required)
-#   DEVICE="iPad Pro 13"        ->  2064x2752   (13", required for a universal app)
+#   DEVICE="iPhone 14 Plus"     ->  1284x2778   (fits the 6.5" slot)
+#   DEVICE="iPhone 11 Pro Max"  ->  1242x2688   (fits it too)
+#   DEVICE="iPad Pro 13"        ->  2064x2752   (13" iPad)
+#   DEVICE="iPhone 17 Pro Max"  ->  1320x2868   (6.9", if that slot is offered)
 #
-# Both sizes verified against those simulators.
+# Every size measured by booting that simulator. The 6.5" models have no
+# simulator by default in Xcode 26 — see plans/store-listing.md to create one.
 #
 # CONTENT_SIZE is how Phase 9's P9-3 was actually checked, and it is worth
 # re-running whenever a layout changes: at the largest category the control bar

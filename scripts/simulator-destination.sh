@@ -12,11 +12,13 @@
 # keeps working, so tests and CI pass no DEVICE and take whatever is newest.
 #
 # DEVICE exists for the one job that genuinely needs a *particular* model: App
-# Store screenshots have to be 6.9" iPhone and 13" iPad, and the default pick is
-# neither. It is a substring match, but an exact name always wins — without that
-# rule "iPhone 17 Pro" would match "iPhone 17 Pro Max" and hand back a device
-# whose screenshots are the wrong size, which is precisely the mistake this is
-# here to prevent.
+# Store screenshots have to match the sizes App Store Connect prints on its own
+# upload page, and the default pick matches none of them.
+#
+# It is a substring match, but an exact name always wins — without that rule
+# "iPhone 17 Pro" would match "iPhone 17 Pro Max" and hand back a device whose
+# screenshots are the wrong size, which is precisely the mistake this is here to
+# prevent.
 set -euo pipefail
 
 FAMILY="${1:-iphone}"

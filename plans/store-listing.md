@@ -107,11 +107,20 @@ claim, including the one required-reason API (`UserDefaults`, CA92.1).
 
 ## Screenshots
 
-Required: **6.9" iPhone (1320×2868)** and, because the app ships universal
-(`deviceFamily: [1, 2]`), **13" iPad (2064×2752)**. The App Store accepts one
-set per device class and scales down, so those two sizes cover every device.
+**Take the sizes from the upload page, not from here.** App Store Connect states
+the exact pixel dimensions each slot accepts, right above the drop zone, and
+those are the only authority. What a given simulator *produces* and what a slot
+*accepts* are two different facts, and assuming the first answers the second is
+how this section was wrong the first time it was written.
 
-Five are captured in `screenshots/iphone-6.3/`, and they are the right *shots*:
+As the page reads today for app `6800377712`:
+
+> **iPhone — 6.5" Display.** 1242 × 2688px, 2688 × 1242px, 1284 × 2778px or
+> 2778 × 1284px
+
+so the iPhone set has to be one of those, and the iPad set is 2064×2752.
+
+The five shots, whatever size they end up being captured at:
 
 | # | File | Screen | Caption |
 |---|---|---|---|
@@ -123,18 +132,34 @@ Five are captured in `screenshots/iphone-6.3/`, and they are the right *shots*:
 
 A folder per device class, because App Store Connect wants a set per class:
 
-| Folder | Device | `DEVICE=` | Size | Captured |
+| Folder | Device | `DEVICE=` | Size | State |
 |---|---|---|---|---|
-| `iphone-6.3/` | iPhone 17 Pro | *(default)* | 1206×2622 | 1–5 — optional size |
-| `iphone-6.9/` | iPhone 17 Pro Max | `"iPhone 17 Pro Max"` | 1320×2868 | 1–4, **5-win missing** |
+| `iphone-6.5/` | iPhone 14 Plus | `"iPhone 14 Plus"` | 1284×2778 | ❌ **the one the page wants** |
 | `ipad-13/` | iPad Pro 13-inch | `"iPad Pro 13"` | 2064×2752 | 1–2, **3–5 missing** |
+| `iphone-6.9/` | iPhone 17 Pro Max | `"iPhone 17 Pro Max"` | 1320×2868 | 1–4 — keep only if a 6.9" slot appears |
+| `iphone-6.3/` | iPhone 17 Pro | *(default)* | 1206×2622 | 1–5 — matches no slot |
 
-Every size above was verified against the actual simulator, and every file in
-those folders is the size its folder claims.
+Every size was measured by booting that simulator and taking a screenshot, and
+every file is the size its folder claims. What none of that establishes is which
+slot the page offers — check the page.
 
-The 6.3" set is the optional one and is complete; the two *required* sets are
-not. App Store Connect will take a partial set, but a listing with two iPad
-screenshots next to five iPhone ones reads as unfinished.
+`iPhone 11 Pro Max` gives the other accepted size, 1242×2688, if you prefer it.
+Both fit the same 6.5" slot; 1284×2778 is simply the larger image.
+
+### One-time simulator setup
+
+Xcode 26 ships no 6.5" iPhone by default — the *device type* exists but no
+simulator of it does, so `DEVICE="iPhone 14 Plus"` finds nothing until you make
+one:
+
+```bash
+xcrun simctl create "iPhone 14 Plus" \
+    com.apple.CoreSimulator.SimDeviceType.iPhone-14-Plus \
+    com.apple.CoreSimulator.SimRuntime.iOS-26-5
+```
+
+Already done on this machine. `xcrun simctl list runtimes` if that runtime name
+has moved on.
 
 ### Capturing a set
 
@@ -142,13 +167,19 @@ screenshots next to five iPhone ones reads as unfinished.
 has to run outside the nono sandbox.
 
 ```bash
-DEV="iPhone 17 Pro Max"
-OUT=screenshots/iphone-6.9
+DEV="iPhone 14 Plus"
+OUT=screenshots/iphone-6.5
 
 DEVICE="$DEV" ./scripts/screenshot.sh $OUT/1-home.png     iphone -skipWelcome -inMemoryStore
 DEVICE="$DEV" ./scripts/screenshot.sh $OUT/2-board.png    iphone -skipWelcome -inMemoryStore -startGame medium -prefill 38
 DEVICE="$DEV" ./scripts/screenshot.sh $OUT/4-settings.png iphone -skipWelcome -inMemoryStore
 DEVICE="$DEV" ./scripts/screenshot.sh $OUT/5-win.png      iphone -skipWelcome -inMemoryStore -startGame easy -prefill 0
+```
+
+Confirm before uploading, because the whole point is the number:
+
+```bash
+sips -g pixelWidth -g pixelHeight screenshots/iphone-6.5/*.png
 ```
 
 Swap `DEV="iPad Pro 13"`, `iphone` → `ipad` and `OUT` for the iPad set.

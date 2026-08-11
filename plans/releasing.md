@@ -19,7 +19,7 @@ the project's actual configuration, but the first run is the first run.
 | App ID `dev.andcake.sudoku.widgets` | ✅ App Groups enabled, 1 assigned | developer portal |
 | Apple **Distribution** certificate | ✅ `Apple Distribution: Ivan Pedrazas (TQ86N6HVWY)` | §1 |
 | App record in App Store Connect | ✅ app `6800377712` | §2 |
-| 6.9" and 13" screenshots | ❌ **wrong size / missing** | see the end |
+| Screenshots at the sizes the page accepts | ❌ **iPhone wrong size, iPad partial** | see the end |
 | Privacy policy page | ❌ **does not exist** | `sudoku.andcake.dev/privacy` |
 
 Provisioning and the app record are done, so §4 onward will run. The two
@@ -244,18 +244,22 @@ TestFlight, and failures arrive by email rather than in the terminal.
 
 ## Screenshots
 
-Five are captured in `screenshots/iphone-6.3/` and they are the right shots at
-the wrong size: 1206×2622 is the 6.3" iPhone 17 Pro, which is both what the
-simulator's ⌘S gives you on that device and what `scripts/screenshot.sh` picks
-by default. App Store Connect wants **6.9" (1320×2868)**, and a universal app
-owes it a **13" iPad (2064×2752)** set as well.
+**Read the accepted dimensions off the App Store Connect upload page**, which
+prints them above each drop zone. What a simulator produces and what a slot
+accepts are different facts, and this file asserted the second from the first
+once already and was wrong. Today the page offers a **6.5" iPhone** slot —
+1242×2688 or 1284×2778 — and a 13" iPad one at 2064×2752.
 
-`DEVICE` selects the model:
+`DEVICE` selects the model, and `iPhone 14 Plus` is the 6.5"-compatible one:
 
 ```bash
-DEVICE="iPhone 17 Pro Max" ./scripts/screenshot.sh screenshots/iphone-6.9/1-home.png \
+DEVICE="iPhone 14 Plus" ./scripts/screenshot.sh screenshots/iphone-6.5/1-home.png \
     iphone -skipWelcome -inMemoryStore
 ```
+
+Xcode 26 ships no such simulator by default; creating it is a one-liner, in
+[`store-listing.md`](store-listing.md#one-time-simulator-setup), and it is
+already done on this machine.
 
 The exact commands for a whole set are in
 [`store-listing.md`](store-listing.md#capturing-a-set), along with which two
