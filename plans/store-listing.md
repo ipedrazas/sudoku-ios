@@ -121,18 +121,20 @@ Five are captured in `screenshots/iphone-6.3/`, and they are the right *shots*:
 | 4 | `4-settings.png` | Settings | It plays the way you want it to |
 | 5 | `5-win.png` | The win card with achievements | Solved — and it remembers |
 
-**They are the wrong size.** All five are 1206×2622 — the 6.3" iPhone 17 Pro,
-which is what `scripts/screenshot.sh` picks by default and what the simulator's
-own ⌘S produces on that device. App Store Connect wants 6.9", and a universal
-app owes it a 13" iPad set too. Hence the folder per device class:
+A folder per device class, because App Store Connect wants a set per class:
 
-| Folder | Device | `DEVICE=` | Size | State |
+| Folder | Device | `DEVICE=` | Size | Captured |
 |---|---|---|---|---|
-| `iphone-6.3/` | iPhone 17 Pro | *(default)* | 1206×2622 | ✅ captured, optional |
-| `iphone-6.9/` | iPhone 17 Pro Max | `"iPhone 17 Pro Max"` | 1320×2868 | ❌ **required** |
-| `ipad-13/` | iPad Pro 13-inch | `"iPad Pro 13"` | 2064×2752 | ❌ **required** |
+| `iphone-6.3/` | iPhone 17 Pro | *(default)* | 1206×2622 | 1–5 — optional size |
+| `iphone-6.9/` | iPhone 17 Pro Max | `"iPhone 17 Pro Max"` | 1320×2868 | 1–4, **5-win missing** |
+| `ipad-13/` | iPad Pro 13-inch | `"iPad Pro 13"` | 2064×2752 | 1–2, **3–5 missing** |
 
-Every size above was verified against the actual simulator.
+Every size above was verified against the actual simulator, and every file in
+those folders is the size its folder claims.
+
+The 6.3" set is the optional one and is complete; the two *required* sets are
+not. App Store Connect will take a partial set, but a listing with two iPad
+screenshots next to five iPhone ones reads as unfinished.
 
 ### Capturing a set
 
