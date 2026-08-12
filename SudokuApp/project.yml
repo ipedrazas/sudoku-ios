@@ -17,6 +17,15 @@ options:
     iOS: "18.0"
   createIntermediateGroups: true
   groupSortPosition: top
+  # Both targets carry `en.lproj` and `es.lproj`. XcodeGen has to be told the
+  # set of regions explicitly — it does not infer them from the directories on
+  # disk, and a region missing from here is a language the built app does not
+  # advertise, however complete its translation is.
+  developmentLanguage: en
+  knownRegions:
+    - en
+    - es
+    - Base
 
 settings:
   base:
@@ -69,6 +78,15 @@ targets:
       properties:
         CFBundleDisplayName: Sudoku and Cake
         ITSAppUsesNonExemptEncryption: false
+        # Without this the App Store lists the app as English-only whatever is
+        # in the bundle, and iOS decides the language from the bundle's
+        # localizations rather than from what the app claims to speak.
+        # `CFBundleDevelopmentRegion` is not set here: the generated plist
+        # already carries `$(DEVELOPMENT_LANGUAGE)`, which resolves from
+        # `options.developmentLanguage` above.
+        CFBundleLocalizations:
+          - en
+          - es
         # An empty dictionary is enough to opt into the full screen; the colour
         # is what stops the launch being a white rectangle in front of a dark
         # app. It matches `systemGroupedBackground` — the colour behind the home
@@ -129,6 +147,9 @@ targets:
       path: ../SudokuWidgets/Info.plist
       properties:
         CFBundleDisplayName: Sudoku and Cake
+        CFBundleLocalizations:
+          - en
+          - es
         NSExtension:
           NSExtensionPointIdentifier: com.apple.widgetkit-extension
 

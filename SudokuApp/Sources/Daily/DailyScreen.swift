@@ -81,14 +81,14 @@ struct DailyScreen: View {
     }
 
     private var statusLine: String {
-        guard let today else { return "Not started" }
+        guard let today else { return String(localized: "Not started") }
         if today.isCompleted {
-            return today.formattedTime.map { "Solved in \($0)" } ?? "Solved"
+            return today.formattedTime.map { String(localized: "Solved in \($0)") } ?? String(localized: "Solved")
         }
         if today.isInProgress, let remaining = today.remainingCells {
-            return "In progress — \(remaining) to go"
+            return String(localized: "In progress — \(remaining) to go")
         }
-        return "Not started"
+        return String(localized: "Not started")
     }
 
     private var playButton: some View {
@@ -107,9 +107,9 @@ struct DailyScreen: View {
     }
 
     private var playTitle: String {
-        guard let today else { return "Play today's puzzle" }
-        if today.isCompleted { return "Play it again" }
-        return today.isInProgress ? "Continue" : "Play today's puzzle"
+        guard let today else { return String(localized: "Play today's puzzle") }
+        if today.isCompleted { return String(localized: "Play it again") }
+        return today.isInProgress ? String(localized: "Continue") : String(localized: "Play today's puzzle")
     }
 
     private var playSymbol: String {
@@ -123,14 +123,19 @@ struct DailyScreen: View {
                 .foregroundStyle(.secondary)
         } label: {
             Label {
-                Text(model.streak.current == 1 ? "1 day streak" : "\(model.streak.current) day streak")
+                // The hand-written "1 day streak" special case is gone: one
+                // inflected form covers both, and covers languages where the
+                // split is not at one.
+                Text("^[\(model.streak.current) day](inflect: true) streak")
             } icon: {
                 Image(systemName: "flame.fill")
                     .foregroundStyle(model.streak.current > 0 ? .orange : .secondary)
             }
         }
         .accessibilityIdentifier("daily.streak")
-        .accessibilityLabel("Current streak \(model.streak.current) days, best \(model.streak.best)")
+        .accessibilityLabel(
+            Text("Current streak ^[\(model.streak.current) day](inflect: true), best \(model.streak.best)")
+        )
     }
 
     @ViewBuilder

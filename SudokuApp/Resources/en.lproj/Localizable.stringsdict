@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+    Only the phrases whose English actually changes with the count.
+
+    "3 day streak" and "1 day streak" are both correct English — the noun is
+    attributive and does not take an -s — so those keys are not here. Spanish
+    has to say "racha de 3 días", and its own stringsdict carries far more
+    entries as a result. A key absent from this file falls through to itself,
+    which is the English source text.
+-->
+<plist version="1.0">
+<dict>
+    <key>%lld puzzles solved</key>
+    <dict>
+        <key>NSStringLocalizedFormatKey</key>
+        <string>%#@puzzles@</string>
+        <key>puzzles</key>
+        <dict>
+            <key>NSStringFormatSpecTypeKey</key>
+            <string>NSStringPluralRuleType</string>
+            <key>NSStringFormatValueTypeKey</key>
+            <string>lld</string>
+            <key>one</key>
+            <string>1 puzzle solved</string>
+            <key>other</key>
+            <string>%lld puzzles solved</string>
+        </dict>
+    </dict>
+
+    <key>%@ · %lld achievements</key>
+    <dict>
+        <key>NSStringLocalizedFormatKey</key>
+        <string>%1$@ · %2$#@achievements@</string>
+        <key>achievements</key>
+        <dict>
+            <key>NSStringFormatSpecTypeKey</key>
+            <string>NSStringPluralRuleType</string>
+            <key>NSStringFormatValueTypeKey</key>
+            <string>lld</string>
+            <key>one</key>
+            <string>1 achievement</string>
+            <key>other</key>
+            <string>%lld achievements</string>
+        </dict>
+    </dict>
+
+    <key>%lld solved puzzles and every saved game. This cannot be undone.</key>
+    <dict>
+        <key>NSStringLocalizedFormatKey</key>
+        <string>%#@puzzles@</string>
+        <key>puzzles</key>
+        <dict>
+            <key>NSStringFormatSpecTypeKey</key>
+            <string>NSStringPluralRuleType</string>
+            <key>NSStringFormatValueTypeKey</key>
+            <string>lld</string>
+            <key>one</key>
+            <string>1 solved puzzle and every saved game. This cannot be undone.</string>
+            <key>other</key>
+            <string>%lld solved puzzles and every saved game. This cannot be undone.</string>
+        </dict>
+    </dict>
+
+    <key>%lld days so far. Today&apos;s Sudoku takes a few minutes.</key>
+    <dict>
+        <key>NSStringLocalizedFormatKey</key>
+        <string>%#@days@</string>
+        <key>days</key>
+        <dict>
+            <key>NSStringFormatSpecTypeKey</key>
+            <string>NSStringPluralRuleType</string>
+            <key>NSStringFormatValueTypeKey</key>
+            <string>lld</string>
+            <key>one</key>
+            <string>1 day so far. Today&apos;s Sudoku takes a few minutes.</string>
+            <key>other</key>
+            <string>%lld days so far. Today&apos;s Sudoku takes a few minutes.</string>
+        </dict>
+    </dict>
+</dict>
+</plist>

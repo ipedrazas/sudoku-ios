@@ -9,10 +9,13 @@ enum InputMode: String, CaseIterable, Sendable {
     /// same digit, and what most competitive Sudoku apps default to.
     case digitFirst
 
+    /// Already localised, so the views that show it use `Text(_ content:)`
+    /// rather than the `LocalizedStringKey` overload. `rawValue` is what gets
+    /// written to `UserDefaults` and stays English.
     var name: String {
         switch self {
-        case .cellFirst: "Cell first"
-        case .digitFirst: "Digit first"
+        case .cellFirst: String(localized: "Cell first")
+        case .digitFirst: String(localized: "Digit first")
         }
     }
 }

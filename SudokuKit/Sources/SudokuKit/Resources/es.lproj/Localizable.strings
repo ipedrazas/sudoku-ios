@@ -1,0 +1,113 @@
+/* SudokuKit — la letra que enseña.
+
+   Las unidades llevan su artículo ("la fila 4", "el bloque 4"), así que ninguna
+   frase puede colocar delante de %@ una preposición que se contraiga con él:
+   siempre "en", nunca "de" ni "a", porque "de el bloque 4" no es español y desde
+   aquí no hay forma de arreglarlo. */
+
+/* MARK: - Unidades */
+
+"unit.row" = "la fila %d";
+"unit.column" = "la columna %d";
+"unit.box" = "el bloque %d";
+
+/* MARK: - Dificultad */
+
+"difficulty.easy" = "Fácil";
+"difficulty.medium" = "Medio";
+"difficulty.hard" = "Difícil";
+"difficulty.expert" = "Experto";
+
+/* MARK: - Logros */
+
+"achievement.first_easy_solve.name" = "Primer paso";
+"achievement.first_easy_solve.detail" = "Completa tu primer sudoku fácil";
+"achievement.first_medium_solve.name" = "Subiendo el listón";
+"achievement.first_medium_solve.detail" = "Completa tu primer sudoku medio";
+"achievement.first_hard_solve.name" = "Sin miedo";
+"achievement.first_hard_solve.detail" = "Completa tu primer sudoku difícil";
+"achievement.speed_easy_5m.name" = "Dedos rápidos";
+"achievement.speed_easy_5m.detail" = "Resuelve un sudoku fácil en menos de 5 minutos";
+"achievement.speed_medium_10m.name" = "Mente afilada";
+"achievement.speed_medium_10m.detail" = "Resuelve un sudoku medio en menos de 10 minutos";
+"achievement.speed_hard_20m.name" = "Relámpago";
+"achievement.speed_hard_20m.detail" = "Resuelve un sudoku difícil en menos de 20 minutos";
+"achievement.games_10.name" = "Calentando motores";
+"achievement.games_10.detail" = "Completa 10 partidas";
+"achievement.games_50.name" = "Constancia";
+"achievement.games_50.detail" = "Completa 50 partidas";
+"achievement.games_100.name" = "Centurión";
+"achievement.games_100.detail" = "Completa 100 partidas";
+"achievement.streak_7.name" = "Semana redonda";
+"achievement.streak_7.detail" = "Mantén una racha de 7 días";
+"achievement.streak_30.name" = "Maestro del mes";
+"achievement.streak_30.detail" = "Mantén una racha de 30 días";
+
+/* MARK: - Pistas: una entrada equivocada
+
+   Se comprueban antes que cualquier técnica, así que son las únicas que ve
+   quien tiene un error en el tablero. %1$@ es una casilla en notación R5C2. */
+
+"hint.mistake.nudge" = "Algo de aquí arriba no cuadra. Repasa lo que has puesto.";
+"hint.mistake.locate" = "Hay un error en %@.";
+"hint.mistake.explain" = "%1$@ contiene un %2$d, y no puede ser: así el sudoku se queda sin solución.";
+"hint.mistake.reveal" = "%1$@ debería ser %2$d, no %3$d.";
+
+/* MARK: - Pistas: no queda nada que hacer */
+
+"hint.solved" = "Resuelto: no queda nada por encontrar.";
+"hint.stuck.teaching" = "Este necesita una técnica que va más allá de mirar y de los patrones sencillos.";
+"hint.stuck.none" = "No hay ninguna pista disponible.";
+
+/* La respuesta, cuando ya se pide sin rodeos. La comparten todas las técnicas
+   que colocan una cifra, porque solo hay una manera de decirlo. */
+"hint.reveal.placement" = "%1$@ es %2$d.";
+
+/* MARK: - Pistas: único desnudo */
+
+"hint.nakedSingle.nudge" = "Hay una casilla en la que solo cabe un número.";
+"hint.nakedSingle.locate" = "Fíjate en %@: solo encaja un número.";
+"hint.nakedSingle.explain" = "Todos los números menos uno ya aparecen en la fila, la columna o el bloque de %@, así que solo queda ese.";
+
+/* MARK: - Pistas: único oculto */
+
+"hint.hiddenSingle.nudge" = "Hay un único oculto en %@.";
+"hint.hiddenSingle.locate" = "En %@, a un número solo le queda una casilla donde ir.";
+"hint.hiddenSingle.explain" = "%1$@ es la única casilla en %2$@ que puede llevar un %3$d: todas las demás están bloqueadas.";
+
+/* MARK: - Pistas: candidato bloqueado */
+
+"hint.lockedCandidate.nudge" = "Un número en %@ está atado a una sola línea.";
+"hint.lockedCandidate.locate" = "En %1$@, el %2$d solo puede aparecer en %3$@.";
+"hint.lockedCandidate.explain" = "Todos los sitios donde podría ir el %1$d en %2$@ caen en %3$@, así que el %1$d queda descartado en %4$@ de esa línea.";
+"hint.lockedCandidate.reveal" = "Quita el %1$d de %2$@.";
+
+/* MARK: - Pistas: pareja y trío desnudos */
+
+"hint.nakedPair.nudge" = "Hay una pareja desnuda en %@.";
+"hint.nakedTriple.nudge" = "Hay un trío desnudo en %@.";
+"hint.nakedSubset.locate" = "Mira %1$@ en %2$@.";
+/* "entre ellas", no "entre las dos": la misma frase sirve para la pareja y para
+   el trío, y el inglés no distingue las dos ("between them"). */
+"hint.nakedSubset.explain" = "%1$@ solo pueden llevar %2$@ entre ellas, así que esos números ya están pillados: ninguna otra casilla en %3$@ puede quedárselos.";
+"hint.nakedSubset.reveal" = "Quita %1$@ de %2$@.";
+
+/* MARK: - Pistas: pareja y trío ocultos */
+
+"hint.hiddenPair.nudge" = "Hay una pareja oculta en %@.";
+"hint.hiddenTriple.nudge" = "Hay un trío oculto en %@.";
+"hint.hiddenSubset.locate" = "En %1$@, mira dónde pueden ir %2$@.";
+"hint.hiddenSubset.explain" = "%1$@ solo pueden ir en %2$@, así que esas casillas no llevan nada más.";
+"hint.hiddenSubset.reveal" = "Reduce %1$@ a %2$@.";
+
+/* MARK: - Pistas: X-wing */
+
+"hint.xWing.nudge" = "Hay un X-wing con el %d.";
+"hint.xWing.locate" = "Compara %1$@: el %2$d ocupa las mismas dos posiciones en cada una.";
+"hint.xWing.explain" = "El %1$d aparece exactamente en las mismas dos posiciones en %2$@. Caiga como caiga, esas dos líneas que las cruzan quedan cubiertas, así que el %1$d se descarta en el resto de ellas.";
+"hint.xWing.reveal" = "Quita el %1$d de %2$@.";
+
+/* MARK: - Listas */
+
+"list.separator" = ", ";
+"list.conjunction" = " y ";

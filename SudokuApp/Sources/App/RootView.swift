@@ -235,18 +235,25 @@ struct RootView: View {
         .navigationTitle("Sudoku and Cake")
     }
 
+    /// Already localised, which is why the `Text` that shows it takes a `String`
+    /// rather than a `LocalizedStringKey`: the lookup happens here, where the
+    /// numbers that decide the plural are.
     private var dailySubtitle: String {
         let streak = daily.streak.current
         guard let today = daily.today() else {
-            return streak > 0 ? "Not played — \(streak) day streak at stake" : "A new puzzle every day"
+            return streak > 0
+                ? String(localized: "Not played — \(streak) day streak at stake")
+                : String(localized: "A new puzzle every day")
         }
-        if today.isCompleted { return streak > 0 ? "Solved — \(streak) day streak" : "Solved" }
-        return today.isInProgress ? "In progress" : "Not played yet"
+        if today.isCompleted {
+            return streak > 0 ? String(localized: "Solved — \(streak) day streak") : String(localized: "Solved")
+        }
+        return today.isInProgress ? String(localized: "In progress") : String(localized: "Not played yet")
     }
 
     private func navigationRow(
-        title: String,
-        subtitle: String,
+        title: LocalizedStringKey,
+        subtitle: LocalizedStringKey,
         route: Route,
         identifier: String
     ) -> some View {
@@ -274,10 +281,13 @@ struct RootView: View {
 
     private var statsSubtitle: String {
         let solved = stats.stats.totalFinished
-        guard solved > 0 else { return "Nothing solved yet" }
+        guard solved > 0 else { return String(localized: "Nothing solved yet") }
         let unlocked = stats.unlockedCount
-        let puzzles = solved == 1 ? "1 puzzle" : "\(solved) puzzles"
-        return unlocked > 0 ? "\(puzzles) · \(unlocked) achievements" : puzzles
+        // The count decides the noun, so both halves are plural forms rather
+        // than one sentence with a number dropped into it.
+        let puzzles = String(localized: "\(solved) puzzles solved")
+        guard unlocked > 0 else { return puzzles }
+        return String(localized: "\(puzzles) · \(unlocked) achievements")
     }
 
     /// Names the technique each rung actually requires. The difficulty ladder is
@@ -285,10 +295,10 @@ struct RootView: View {
     /// than "medium" and teaches the vocabulary the hints will use.
     private func hint(for difficulty: Difficulty) -> String {
         switch difficulty {
-        case .easy: "scanning"
-        case .medium: "locked candidates"
-        case .hard: "and a little more"
-        case .expert: "hidden pairs, X-wings"
+        case .easy: String(localized: "scanning")
+        case .medium: String(localized: "locked candidates")
+        case .hard: String(localized: "and a little more")
+        case .expert: String(localized: "hidden pairs, X-wings")
         }
     }
 
@@ -543,6 +553,8 @@ private struct SavedGameRow: View {
             HStack {
                 Label(summary.formattedTime, systemImage: "clock")
                 Spacer()
+                // `inflect:` handles the English plural and the Spanish one from
+                // the same markup, so the count stays in one place.
                 Text("^[\(summary.remainingCells) cell](inflect: true) left")
             }
             .font(.caption)
@@ -552,7 +564,12 @@ private struct SavedGameRow: View {
         .contentShape(.rect)
         .accessibilityElement(children: .combine)
         .accessibilityLabel(
-            "\(summary.difficulty.name), \(summary.formattedTime) played, \(summary.remainingCells) cells left"
+            Text(
+                """
+                \(summary.difficulty.name), \(summary.formattedTime) played, \
+                ^[\(summary.remainingCells) cell](inflect: true) left
+                """
+            )
         )
     }
 }

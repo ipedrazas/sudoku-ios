@@ -147,11 +147,12 @@ final class ImportModel {
     /// What the rating means, in the vocabulary the hints use.
     nonisolated static func describe(_ tier: Tier) -> String {
         switch tier {
-        case .nakedSingle: "Scanning alone will finish it."
-        case .hiddenSingle: "Needs hidden singles — scanning, with a little care."
-        case .locked: "Needs locked candidates or a naked pair."
-        case .advanced: "Needs a hidden pair, naked triple, or X-wing."
-        case .beyond: "Harder than anything this app generates. Hints may run out before the puzzle does."
+        case .nakedSingle: String(localized: "Scanning alone will finish it.")
+        case .hiddenSingle: String(localized: "Needs hidden singles — scanning, with a little care.")
+        case .locked: String(localized: "Needs locked candidates or a naked pair.")
+        case .advanced: String(localized: "Needs a hidden pair, naked triple, or X-wing.")
+        case .beyond:
+            String(localized: "Harder than anything this app generates. Hints may run out before the puzzle does.")
         }
     }
 }

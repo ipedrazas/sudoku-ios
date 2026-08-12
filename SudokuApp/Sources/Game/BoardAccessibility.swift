@@ -22,22 +22,26 @@ enum BoardAccessibility {
     /// player would have to work out the whole grid to discover the same thing —
     /// which is not a harder game, it is a different and worse one.
     static func label(for cell: CellRef, in session: GameSession) -> String {
-        var parts = ["row \(cell.row + 1), column \(cell.col + 1)"]
+        var parts = [String(localized: "row \(cell.row + 1), column \(cell.col + 1)")]
 
         let value = session.board[cell]
         if value != 0 {
             parts.append(String(value))
-            if session.isGiven(cell) { parts.append("given") }
+            if session.isGiven(cell) { parts.append(String(localized: "given")) }
         } else {
             let notes = Candidates.digits(session.notes(at: cell))
-            parts.append(notes.isEmpty ? "empty" : "notes \(notes.map(String.init).joined(separator: ", "))")
+            parts.append(
+                notes.isEmpty
+                    ? String(localized: "empty")
+                    : String(localized: "notes \(notes.map(String.init).joined(separator: ", "))")
+            )
         }
 
         // `session.conflicts` is empty when mistake highlighting is off, so this
         // cannot announce something the board is not drawing. The setting has to
         // mean one thing whether or not you can see the screen.
-        if session.conflicts.contains(cell) { parts.append("conflicts") }
-        if session.hintCells.contains(cell) { parts.append("hint") }
+        if session.conflicts.contains(cell) { parts.append(String(localized: "conflicts")) }
+        if session.hintCells.contains(cell) { parts.append(String(localized: "hint")) }
 
         // The box is deliberately absent. It is derivable from the row and
         // column, and saying it on all 81 cells adds a word to every swipe to
@@ -50,7 +54,7 @@ enum BoardAccessibility {
     /// the contents once VoiceOver lands on it, and hearing them twice in a row
     /// is how a rotor stops being faster than swiping.
     static func rotorLabel(for cell: CellRef) -> String {
-        "Row \(cell.row + 1), column \(cell.col + 1)"
+        String(localized: "Row \(cell.row + 1), column \(cell.col + 1)")
     }
 
     /// The top-left cell of a box, which is where a sighted player starts

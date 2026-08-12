@@ -56,9 +56,8 @@ struct ContributionHeatmap: View {
     /// the reader.
     private func label(for day: ContributionDay) -> String {
         let date = day.date.formatted(.dateTime.day().month(.wide).year())
-        return day.solved == 0
-            ? "\(date), no puzzles"
-            : "\(date), \(day.solved == 1 ? "1 puzzle" : "\(day.solved) puzzles")"
+        guard day.solved > 0 else { return String(localized: "\(date), no puzzles") }
+        return String(localized: "\(date), \(String(localized: "\(day.solved) puzzles solved"))")
     }
 
     private func fill(level: Int) -> Color {

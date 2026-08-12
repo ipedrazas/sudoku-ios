@@ -88,6 +88,13 @@ jobs:
         if: steps.probe.outputs.exists == 'true'
         run: task xcodegen
 
+      # Cheap, and catches the one class of localization bug a passing build
+      # cannot: a string that is looked up at run time and translated nowhere.
+      # It runs before the tests because it takes seconds and they take minutes.
+      - name: Localization
+        if: steps.probe.outputs.exists == 'true' && matrix.family == 'iphone'
+        run: task localization
+
       - name: Test
         if: steps.probe.outputs.exists == 'true'
         run: |

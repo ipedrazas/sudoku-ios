@@ -35,31 +35,86 @@ struct HintCopyTests {
         .xWing(digit: 9, lines: [.row(1), .row(6)], eliminates: [cellA, cellB]),
     ]
 
-    @Test("every technique has copy at every level", arguments: steps)
-    func copyExists(step: TechniqueStep) {
-        let hint = hint(step)
-        for level in HintLevel.allCases {
-            let text = hint.text(at: level)
-            #expect(!text.isEmpty, "\(step.techniqueName) has no copy at \(level)")
-            #expect(text.last == ".", "\(step.techniqueName) copy at \(level) is not a sentence: \(text)")
-            #expect(!text.contains("Optional("), "copy leaked an Optional at \(level): \(text)")
-            #expect(!text.contains("  "), "copy has doubled spaces at \(level): \(text)")
+    /// Every language the kit ships copy for.
+    ///
+    /// Read from the kit rather than listed here, so adding a translation puts
+    /// it under test without anyone remembering to.
+    static let languages: [String] = Copy.availableLanguages
+
+    @Test("every technique has copy at every level", arguments: steps, languages)
+    func copyExists(step: TechniqueStep, language: String) {
+        Copy.$language.withValue(language) {
+            let hint = hint(step)
+            for level in HintLevel.allCases {
+                let text = hint.text(at: level)
+                #expect(!text.isEmpty, "[\(language)] \(step.techniqueName) has no copy at \(level)")
+                #expect(
+                    text.last == ".",
+                    "[\(language)] \(step.techniqueName) copy at \(level) is not a sentence: \(text)"
+                )
+                #expect(!text.contains("Optional("), "[\(language)] copy leaked an Optional at \(level): \(text)")
+                #expect(!text.contains("  "), "[\(language)] copy has doubled spaces at \(level): \(text)")
+                // A key that a translation is missing comes back as the key
+                // itself. It ends in a word, not a full stop, so the assertion
+                // above already catches it — but saying so directly turns a
+                // baffling failure into an obvious one.
+                #expect(!text.hasPrefix("hint."), "[\(language)] no copy for a hint key at \(level): \(text)")
+                #expect(!text.contains("%"), "[\(language)] a format specifier survived at \(level): \(text)")
+            }
         }
     }
 
-    @Test("copy gets more specific as the level rises", arguments: steps)
-    func copyEscalates(step: TechniqueStep) {
-        let hint = hint(step)
-        let nudge = hint.text(at: .nudge)
-        let explain = hint.text(at: .explain)
-        #expect(explain.count > nudge.count, "\(step.techniqueName): explain should say more than nudge")
+    @Test("copy gets more specific as the level rises", arguments: steps, languages)
+    func copyEscalates(step: TechniqueStep, language: String) {
+        Copy.$language.withValue(language) {
+            let hint = hint(step)
+            let nudge = hint.text(at: .nudge)
+            let explain = hint.text(at: .explain)
+            #expect(
+                explain.count > nudge.count,
+                "[\(language)] \(step.techniqueName): explain should say more than nudge"
+            )
+        }
     }
 
-    @Test("a nudge names the technique without naming the cells", arguments: steps)
-    func nudgeIsVague(step: TechniqueStep) {
-        let nudge = hint(step).text(at: .nudge)
-        for cell in HintEngine.highlightCells(for: step) {
-            #expect(!nudge.contains(cell.description), "the nudge for \(step.techniqueName) leaked \(cell)")
+    @Test("a nudge names the technique without naming the cells", arguments: steps, languages)
+    func nudgeIsVague(step: TechniqueStep, language: String) {
+        Copy.$language.withValue(language) {
+            let nudge = hint(step).text(at: .nudge)
+            for cell in HintEngine.highlightCells(for: step) {
+                #expect(
+                    !nudge.contains(cell.description),
+                    "[\(language)] the nudge for \(step.techniqueName) leaked \(cell)"
+                )
+            }
+        }
+    }
+
+    /// Spanish inflects, and the wrong article is the failure this whole
+    /// restructuring exists to prevent.
+    ///
+    /// Units carry their own article, so any sentence placing "de" or "a"
+    /// immediately before one produces "de el bloque 4" — which no Spanish
+    /// speaker writes, and which a translator working only in the strings file
+    /// cannot fix, because the preposition is on the other side of a `%@`.
+    @Test("Spanish never leaves an uncontracted preposition before a unit", arguments: steps)
+    func spanishContractions(step: TechniqueStep) {
+        Copy.$language.withValue("es") {
+            let hint = hint(step)
+            for level in HintLevel.allCases {
+                let text = hint.text(at: level)
+                // Whole words, not substrings: "Quita el 3" contains "a el" and
+                // is perfectly good Spanish. What is being looked for is the
+                // preposition standing on its own in front of "el".
+                let words = text.split(whereSeparator: { !$0.isLetter }).map(String.init)
+                for (first, second) in zip(words, words.dropFirst()) {
+                    let preposition = first.lowercased()
+                    #expect(
+                        !((preposition == "de" || preposition == "a") && second == "el"),
+                        "\(step.techniqueName) at \(level) reads '\(first) el', which contracts: \(text)"
+                    )
+                }
+            }
         }
     }
 
@@ -94,20 +149,88 @@ struct HintCopyTests {
         let triple = TechniqueStep.nakedSubset(
             cells: [Self.cellA, Self.cellB, Self.cellC], digits: [2, 5, 8], unit: .row(4), eliminates: []
         )
-        #expect(hint(pair).text(at: .nudge).contains("pair"))
-        #expect(hint(triple).text(at: .nudge).contains("triple"))
-
         let hiddenPair = TechniqueStep.hiddenSubset(cells: [Self.cellA, Self.cellB], digits: [4, 6], unit: .row(4))
-        #expect(hint(hiddenPair).text(at: .nudge).contains("pair"))
+
+        // A pair and a triple must not read the same, in any language: the size
+        // of the subset is the thing the nudge is there to tell the player.
+        for language in Self.languages {
+            Copy.$language.withValue(language) {
+                #expect(
+                    hint(pair).text(at: .nudge) != hint(triple).text(at: .nudge),
+                    "[\(language)] a naked pair and a naked triple nudge identically"
+                )
+            }
+        }
+
+        Copy.$language.withValue("en") {
+            #expect(hint(pair).text(at: .nudge).contains("pair"))
+            #expect(hint(triple).text(at: .nudge).contains("triple"))
+            #expect(hint(hiddenPair).text(at: .nudge).contains("pair"))
+        }
+        Copy.$language.withValue("es") {
+            #expect(hint(pair).text(at: .nudge).contains("pareja"))
+            #expect(hint(triple).text(at: .nudge).contains("trío"))
+        }
+
+        // Not player-facing — a technique's name is an identifier that shows up
+        // in test failures, so it stays put.
         #expect(hiddenPair.techniqueName == "hidden pair")
     }
 
     @Test("units read in human terms, one-based")
     func unitDescriptions() {
+        // `description` is the debugging form and does not translate.
         #expect(UnitRef.row(0).description == "row 1")
         #expect(UnitRef.column(4).description == "column 5")
         #expect(UnitRef.box(8).description == "box 9")
-        #expect(hint(.hiddenSingle(cell: Self.cellA, digit: 7, unit: .box(3))).text(at: .nudge).contains("box 4"))
+
+        Copy.$language.withValue("en") {
+            #expect(UnitRef.box(3).localizedName == "box 4")
+            #expect(hint(.hiddenSingle(cell: Self.cellA, digit: 7, unit: .box(3))).text(at: .nudge).contains("box 4"))
+        }
+        // The article travels with the unit, which is the whole reason
+        // `localizedName` exists separately from `description`.
+        Copy.$language.withValue("es") {
+            #expect(UnitRef.row(0).localizedName == "la fila 1")
+            #expect(UnitRef.box(3).localizedName == "el bloque 4")
+            #expect(
+                hint(.hiddenSingle(cell: Self.cellA, digit: 7, unit: .box(3))).text(at: .nudge)
+                    .contains("el bloque 4")
+            )
+        }
+    }
+
+    @Test("counted phrases agree with their count", arguments: languages)
+    func pluralAgreement(language: String) {
+        Copy.$language.withValue(language) {
+            let one = hint(.lockedCandidate(digit: 3, box: 4, line: .row(4), eliminates: [Self.cellB]))
+            let many = hint(
+                .lockedCandidate(digit: 3, box: 4, line: .row(4), eliminates: [Self.cellB, Self.cellC])
+            )
+            #expect(
+                one.text(at: .explain) != many.text(at: .explain),
+                "[\(language)] one elimination and two read identically, so the plural is not being applied"
+            )
+            #expect(!one.text(at: .explain).contains("%"), "[\(language)] the plural left a specifier behind")
+        }
+    }
+
+    @Test("every achievement and difficulty has copy", arguments: languages)
+    func catalogueCopy(language: String) {
+        Copy.$language.withValue(language) {
+            for achievement in Achievements.all {
+                #expect(!achievement.name.hasPrefix("achievement."), "[\(language)] no name for \(achievement.key)")
+                #expect(
+                    !achievement.detail.hasPrefix("achievement."),
+                    "[\(language)] no detail for \(achievement.key)"
+                )
+            }
+            for difficulty in Difficulty.allCases {
+                #expect(!difficulty.name.hasPrefix("difficulty."), "[\(language)] no name for \(difficulty)")
+                // The stored form is not allowed to move with the language.
+                #expect(difficulty.rawValue == "\(difficulty)")
+            }
+        }
     }
 
     @Test("highlights point at the right places", arguments: steps)
@@ -128,7 +251,12 @@ struct HintCopyTests {
         #expect(stuck.text(at: .reveal).contains("4"))
 
         let nothing = Hint(outcome: .stuck, cells: [], units: [], placement: nil)
-        #expect(nothing.text(at: .reveal) == "No hint available.")
+        Copy.$language.withValue("en") {
+            #expect(nothing.text(at: .reveal) == "No hint available.")
+        }
+        Copy.$language.withValue("es") {
+            #expect(nothing.text(at: .reveal) == "No hay ninguna pista disponible.")
+        }
     }
 
     @Test("hints compare by value")
@@ -248,8 +376,14 @@ struct ValueTypeTests {
 
     @Test("difficulty names are presentable")
     func difficultyNames() {
-        #expect(Difficulty.easy.name == "Easy")
-        #expect(Difficulty.expert.name == "Expert")
+        Copy.$language.withValue("en") {
+            #expect(Difficulty.easy.name == "Easy")
+            #expect(Difficulty.expert.name == "Expert")
+        }
+        Copy.$language.withValue("es") {
+            #expect(Difficulty.easy.name == "Fácil")
+            #expect(Difficulty.expert.name == "Experto")
+        }
         #expect(Difficulty.allCases.count == 4)
     }
 

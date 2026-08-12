@@ -130,16 +130,19 @@ extension DailyEntry {
 
     /// Deliberately not `headline`. The Home Screen can afford encouragement;
     /// the Lock Screen gets the fact.
-    var lockScreenLine: String {
+    var lockScreenLine: LocalizedStringKey {
         guard hasData else { return "Open the app to begin" }
         switch status.standing {
-        case .ready: return status.streak > 0 ? "Ready — \(status.streak) day streak at stake" : "Ready to play"
+        case .ready:
+            return status.streak > 0
+                ? "Ready — ^[\(status.streak) day](inflect: true) streak at stake"
+                : "Ready to play"
         case .inProgress: return "In progress"
         case .completed: return "Done today"
         }
     }
 
-    var inlineLine: String {
+    var inlineLine: LocalizedStringKey {
         switch status.standing {
         case .ready: status.streak > 0 ? "Daily ready · \(status.streak)" : "Daily ready"
         case .inProgress: "Daily in progress"

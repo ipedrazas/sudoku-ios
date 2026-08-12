@@ -1,0 +1,45 @@
+/* SudokuWidgets — English.
+
+   A separate catalogue from the app's, because the widget is a separate
+   process with a separate bundle: it cannot read the app's strings, and a key
+   defined only there would come back untranslated on the Home Screen.
+
+   Duplication with the app's file is therefore deliberate where it happens.
+   Counted phrases live in Localizable.stringsdict. */
+
+/* MARK: - Gallery
+
+   What the widget is called when someone is choosing one. */
+
+"Daily puzzle" = "Daily puzzle";
+"Today's Sudoku, and how your streak is doing." = "Today's Sudoku, and how your streak is doing.";
+"Streak" = "Streak";
+"Whether today's puzzle is still waiting." = "Whether today's puzzle is still waiting.";
+
+/* MARK: - Home Screen */
+
+"Daily" = "Daily";
+"Open the app to begin" = "Open the app to begin";
+"Keep the streak going" = "Keep the streak going";
+"Today's puzzle is ready" = "Today's puzzle is ready";
+"Picked up, not finished" = "Picked up, not finished";
+"Solved today" = "Solved today";
+"Open the app to start it." = "Open the app to start it.";
+"in %lld:%@" = "in %lld:%@";
+
+/* MARK: - Lock Screen */
+
+"Daily Sudoku" = "Daily Sudoku";
+"Solve streak" = "Solve streak";
+"Ready to play" = "Ready to play";
+"In progress" = "In progress";
+"Done today" = "Done today";
+"Daily ready" = "Daily ready";
+"Daily ready · %lld" = "Daily ready · %lld";
+"Daily in progress" = "Daily in progress";
+"Daily done" = "Daily done";
+"Daily done · %lld" = "Daily done · %lld";
+
+/* MARK: - VoiceOver */
+
+"Sudoku grid, %lld of 81 cells filled" = "Sudoku grid, %lld of 81 cells filled";

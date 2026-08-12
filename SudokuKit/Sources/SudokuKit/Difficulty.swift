@@ -24,9 +24,13 @@ public enum Difficulty: String, CaseIterable, Sendable, Codable {
     case hard
     case expert
 
-    /// Display name.
+    /// Display name, translated.
+    ///
+    /// `rawValue` stays English and lowercase — it is the `Codable`
+    /// representation and it is written into the store, so it is not allowed to
+    /// depend on what language the phone is set to.
     public var name: String {
-        rawValue.prefix(1).uppercased() + rawValue.dropFirst()
+        Copy.text("difficulty.\(rawValue)")
     }
 
     /// How the generator carves for this rung.

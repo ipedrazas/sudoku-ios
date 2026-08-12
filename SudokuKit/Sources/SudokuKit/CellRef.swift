@@ -63,11 +63,28 @@ public enum UnitRef: Equatable, Hashable, Sendable {
 }
 
 extension UnitRef: CustomStringConvertible {
+    /// English, and fixed. `description` is what a test failure and a log line
+    /// print, so it stays the same wherever the app is running; anything a
+    /// player reads goes through `localizedName` instead.
     public var description: String {
         switch self {
         case .row(let index): "row \(index + 1)"
         case .column(let index): "column \(index + 1)"
         case .box(let index): "box \(index + 1)"
+        }
+    }
+
+    /// The unit as a hint names it, **with its article** where the language has
+    /// one: "row 4" in English, "la fila 4" in Spanish.
+    ///
+    /// The article belongs here rather than in the surrounding sentence because
+    /// it agrees with the noun — *la* fila but *el* bloque — and the sentence
+    /// does not know which unit it will be handed.
+    public var localizedName: String {
+        switch self {
+        case .row(let index): Copy.text("unit.row", index + 1)
+        case .column(let index): Copy.text("unit.column", index + 1)
+        case .box(let index): Copy.text("unit.box", index + 1)
         }
     }
 }

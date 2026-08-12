@@ -26,6 +26,7 @@ All commands go through [Task](https://taskfile.dev).
 | `task test:kit:cover` | Tests + coverage gate (SudokuKit must be ≥ 90%) |
 | `task bench` | Generation performance harness (Gate G1) |
 | `task typecheck` | Type-check app + widget + app-test sources with `swiftc` (no Xcode build) |
+| `task localization` | Check every localizable string is translated in every language |
 | `task lint` / `task format` | SwiftLint / swift-format |
 | `task xcodegen` | Regenerate `SudokuApp.xcodeproj` from `project.yml` |
 | `task test:app` | App tests on iPhone **and** iPad simulators (needs Xcode) |
@@ -133,6 +134,66 @@ Pure logic, `Sendable` throughout, value types. Ported from the Go backend:
 
 7. **No OCR / photo import.** Tried twice in the web app and removed; manual
    entry replaced it. Do not reintroduce it.
+
+## Localization
+
+English and Spanish. Three catalogues, because there are three bundles: the app
+(`SudokuApp/Resources/*.lproj`), the widget (`SudokuWidgets/*.lproj`) and the
+engine (`SudokuKit/Sources/SudokuKit/Resources/*.lproj`). The widget is a
+separate process and cannot read the app's strings, so overlap between those two
+files is deliberate.
+
+1. **`.strings` and `.stringsdict`, not a String Catalogue.** SwiftPM *copies* a
+   `.xcstrings` into the resource bundle rather than compiling it, so every
+   `SudokuKit` lookup outside Xcode would silently return its key — and the
+   command-line loop is the point of that target. The old format behaves
+   identically under `swift test` and under Xcode, so all three catalogues use
+   it and there is one mechanism to know.
+
+2. **The compiler decides what needs translating, not a grep.**
+   `task localization` runs `-emit-localized-strings`, the same extraction Xcode
+   uses to fill a String Catalogue, and diffs it against the `.lproj` files. It
+   knows which parameters are `LocalizedStringKey` and which are plain `String`,
+   so it also catches the inverse bug: a literal that quietly resolved to a
+   non-localising overload shows up as a key nothing uses. That is how the
+   board's row/column/box rotors were found never to have been translatable, and
+   how the widget was found to be drawing `^[3 cell](inflect: true) left`
+   literally, brackets and all — `Text(someString)` does not localise.
+
+3. **Sentences are format strings; never build one by interpolation or by
+   joining.** `"There's a hidden single in \(unit)"` cannot be translated into
+   any language that inflects, because the translator cannot move the unit
+   relative to the verb. `Copy.text` takes positional arguments for this reason,
+   and `Copy.list` exists because "A and B" is punctuation, which is part of a
+   language.
+
+4. **Units carry their own article** — `UnitRef.localizedName` is "row 4" in
+   English and "la fila 4" in Spanish — because the article agrees with the noun
+   (*la* fila, *el* bloque) and the surrounding sentence does not know which unit
+   it will be handed. The consequence is a rule on the Spanish copy: a unit is
+   always preceded by *en*, never *de* or *a*, because those contract with *el*
+   and "de el bloque 4" is not Spanish. `HintCopyTests` asserts it.
+
+5. **`description` does not translate; `localizedName` does.** `CellRef` stays
+   `R5C2` in every language (it is standard notation), and `UnitRef.description`
+   stays English because it is what a test failure and a log line print.
+
+6. **Accessibility identifiers are addresses, not labels.**
+   `control.hint` must not become `control.pista`. `ControlBar` takes an explicit
+   English `id` rather than deriving one from the title, which it used to.
+
+7. **`rawValue` never moves with the language.** `Difficulty.name` is looked up;
+   `Difficulty.rawValue` is what `Codable` writes to the store. Same for
+   `InputMode` and `ThemePreference`. Achievement titles are looked up from the
+   frozen key, so the 11 keys now join the web app's table *and* every
+   translation.
+
+8. **Spanish plurals go through `.stringsdict`, English through
+   `^[…](inflect: true)`.** Automatic grammar agreement is reliable for English
+   and unverifiable here for Spanish, so Spanish states both forms. A language
+   only ships a localized resource when the development language has the same
+   file, which is why `SudokuWidgets/en.lproj/Localizable.stringsdict` exists and
+   is empty — deleting it drops the Spanish plurals from the bundle silently.
 
 ## Accessibility
 

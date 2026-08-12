@@ -97,8 +97,8 @@ extension View {
 /// A titled card. Charts sit in one of these so the screen reads as a stack of
 /// answers rather than a wall of plots.
 struct StatsCard<Content: View>: View {
-    let title: String
-    var subtitle: String?
+    let title: LocalizedStringKey
+    var subtitle: LocalizedStringKey?
     @ViewBuilder var content: Content
 
     var body: some View {
@@ -123,7 +123,7 @@ struct StatsCard<Content: View>: View {
 /// One headline number. A single value is a stat tile, never a one-bar chart.
 struct StatTile: View {
     let value: String
-    let label: String
+    let label: LocalizedStringKey
     var symbol: String?
     var tint: Color = .secondary
 
@@ -147,6 +147,9 @@ struct StatTile: View {
         .padding(12)
         .background(.background.secondary, in: RoundedRectangle(cornerRadius: 12))
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(label): \(value)")
+        // Wrapped in `Text` rather than interpolated directly: a
+        // `LocalizedStringKey` inside another one interpolates its debug
+        // description, untranslated. `Text` is the composable form.
+        .accessibilityLabel(Text("\(Text(label)): \(value)"))
     }
 }

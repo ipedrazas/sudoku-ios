@@ -190,25 +190,25 @@ extension Hint {
         case .mistake(let cell, let expected, let found):
             switch level {
             case .nudge:
-                return "Something above here doesn't add up. Try checking your entries."
+                return Copy.text("hint.mistake.nudge")
             case .locate:
-                return "There's a mistake in \(cell)."
+                return Copy.text("hint.mistake.locate", cell.description)
             case .explain:
-                return "\(cell) contains \(found), but it can't — that leaves the puzzle unsolvable."
+                return Copy.text("hint.mistake.explain", cell.description, found)
             case .reveal:
-                return "\(cell) should be \(expected), not \(found)."
+                return Copy.text("hint.mistake.reveal", cell.description, expected, found)
             }
 
         case .solved:
-            return "Solved — nothing left to find."
+            return Copy.text("hint.solved")
 
         case .stuck:
             switch level {
             case .nudge, .locate, .explain:
-                return "This one needs a technique beyond scanning and simple patterns."
+                return Copy.text("hint.stuck.teaching")
             case .reveal:
-                guard let placement else { return "No hint available." }
-                return "\(placement.cell) is \(placement.digit)."
+                guard let placement else { return Copy.text("hint.stuck.none") }
+                return Copy.text("hint.reveal.placement", placement.cell.description, placement.digit)
             }
 
         case .step(let step):
@@ -220,81 +220,81 @@ extension Hint {
         switch step {
         case .nakedSingle(let cell, let digit):
             switch level {
-            case .nudge: return "There's a cell with only one possible digit."
-            case .locate: return "Look at \(cell) — only one digit fits."
+            case .nudge: return Copy.text("hint.nakedSingle.nudge")
+            case .locate: return Copy.text("hint.nakedSingle.locate", cell.description)
             case .explain:
                 // A cell is not a digit. The earlier wording read "R4C2 is the
                 // only digit not already in its row, column or box", which is a
                 // category error and, worse, describes a different technique.
-                return "Every digit but one already appears in \(cell)'s row, column or box, so that one is left."
-            case .reveal: return "\(cell) is \(digit)."
+                return Copy.text("hint.nakedSingle.explain", cell.description)
+            case .reveal: return Copy.text("hint.reveal.placement", cell.description, digit)
             }
 
         case .hiddenSingle(let cell, let digit, let unit):
             switch level {
-            case .nudge: return "There's a hidden single in \(unit)."
-            case .locate: return "In \(unit), one digit has only one cell left to go in."
+            case .nudge: return Copy.text("hint.hiddenSingle.nudge", unit.localizedName)
+            case .locate: return Copy.text("hint.hiddenSingle.locate", unit.localizedName)
             case .explain:
-                return "\(cell) is the only cell in \(unit) that can hold \(digit) — every other cell is blocked."
-            case .reveal: return "\(cell) is \(digit)."
+                return Copy.text("hint.hiddenSingle.explain", cell.description, unit.localizedName, digit)
+            case .reveal: return Copy.text("hint.reveal.placement", cell.description, digit)
             }
 
         case .lockedCandidate(let digit, let box, let line, let eliminates):
+            // The box is spelled by the same rule as any other unit, so it picks
+            // up its article with everything else rather than being the one
+            // place a language has to accept "box 4" bare.
+            let boxName = UnitRef.box(box).localizedName
             switch level {
-            case .nudge: return "A digit in box \(box + 1) is locked to one line."
-            case .locate: return "In box \(box + 1), \(digit) can only appear along \(line)."
+            case .nudge: return Copy.text("hint.lockedCandidate.nudge", boxName)
+            case .locate: return Copy.text("hint.lockedCandidate.locate", boxName, digit, line.localizedName)
             case .explain:
-                return """
-                    Every place \(digit) could go in box \(box + 1) lies on \(line), \
-                    so \(digit) can be ruled out of the other \(eliminates.count) \
-                    cell\(eliminates.count == 1 ? "" : "s") on that line.
-                    """
+                return Copy.text(
+                    "hint.lockedCandidate.explain",
+                    digit,
+                    boxName,
+                    line.localizedName,
+                    Copy.text("hint.lockedCandidate.otherCells", eliminates.count)
+                )
             case .reveal:
-                return "Remove \(digit) from \(eliminates.map(\.description).joined(separator: ", "))."
+                return Copy.text("hint.lockedCandidate.reveal", digit, Copy.list(eliminates.map(\.description)))
             }
 
         case .nakedSubset(let cells, let digits, let unit, let eliminates):
-            let names = cells.map(\.description).joined(separator: " and ")
-            let digitList = digits.map(String.init).joined(separator: " and ")
+            let names = Copy.list(cells.map(\.description))
+            let digitList = Copy.list(digits.map(String.init))
             switch level {
-            case .nudge: return "There's a naked \(cells.count == 2 ? "pair" : "triple") in \(unit)."
-            case .locate: return "Look at \(names) in \(unit)."
+            case .nudge:
+                let key = cells.count == 2 ? "hint.nakedPair.nudge" : "hint.nakedTriple.nudge"
+                return Copy.text(key, unit.localizedName)
+            case .locate: return Copy.text("hint.nakedSubset.locate", names, unit.localizedName)
             case .explain:
-                return """
-                    \(names) can only hold \(digitList) between them, so those digits \
-                    are used up — no other cell in \(unit) can take them.
-                    """
+                return Copy.text("hint.nakedSubset.explain", names, digitList, unit.localizedName)
             case .reveal:
-                return "Remove \(digitList) from \(eliminates.map(\.description).joined(separator: ", "))."
+                return Copy.text("hint.nakedSubset.reveal", digitList, Copy.list(eliminates.map(\.description)))
             }
 
         case .hiddenSubset(let cells, let digits, let unit):
-            let digitList = digits.map(String.init).joined(separator: " and ")
+            let digitList = Copy.list(digits.map(String.init))
             switch level {
-            case .nudge: return "There's a hidden \(digits.count == 2 ? "pair" : "triple") in \(unit)."
-            case .locate: return "In \(unit), watch where \(digitList) can go."
+            case .nudge:
+                let key = digits.count == 2 ? "hint.hiddenPair.nudge" : "hint.hiddenTriple.nudge"
+                return Copy.text(key, unit.localizedName)
+            case .locate: return Copy.text("hint.hiddenSubset.locate", unit.localizedName, digitList)
             case .explain:
-                return """
-                    \(digitList) can only go in \(cells.map(\.description).joined(separator: " and ")), \
-                    so those cells hold nothing else.
-                    """
+                return Copy.text("hint.hiddenSubset.explain", digitList, Copy.list(cells.map(\.description)))
             case .reveal:
-                return "Reduce \(cells.map(\.description).joined(separator: ", ")) to \(digitList)."
+                return Copy.text("hint.hiddenSubset.reveal", Copy.list(cells.map(\.description)), digitList)
             }
 
         case .xWing(let digit, let lines, let eliminates):
-            let lineList = lines.map(\.description).joined(separator: " and ")
+            let lineList = Copy.list(lines.map(\.localizedName))
             switch level {
-            case .nudge: return "There's an X-wing on \(digit)."
-            case .locate: return "Compare \(lineList) — \(digit) sits in the same two positions in each."
+            case .nudge: return Copy.text("hint.xWing.nudge", digit)
+            case .locate: return Copy.text("hint.xWing.locate", lineList, digit)
             case .explain:
-                return """
-                    \(digit) appears in exactly the same two positions in \(lineList). \
-                    Whichever way round it falls, those two crossing lines are covered, \
-                    so \(digit) can be ruled out of them elsewhere.
-                    """
+                return Copy.text("hint.xWing.explain", digit, lineList)
             case .reveal:
-                return "Remove \(digit) from \(eliminates.map(\.description).joined(separator: ", "))."
+                return Copy.text("hint.xWing.reveal", digit, Copy.list(eliminates.map(\.description)))
             }
         }
     }

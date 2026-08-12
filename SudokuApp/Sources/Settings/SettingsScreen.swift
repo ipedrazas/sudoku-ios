@@ -97,7 +97,12 @@ struct SettingsScreen: View {
 
             Section {
                 LabeledContent("Puzzles solved", value: String(stats.stats.totalFinished))
-                LabeledContent("Achievements", value: "\(stats.unlockedCount) of \(stats.achievements.count)")
+                // `value:` is shown verbatim, so the "of" has to be localised
+                // here — a plain Swift interpolation would stay English.
+                LabeledContent(
+                    "Achievements",
+                    value: String(localized: "\(stats.unlockedCount) of \(stats.achievements.count)")
+                )
             } header: {
                 Text("This device")
             } footer: {

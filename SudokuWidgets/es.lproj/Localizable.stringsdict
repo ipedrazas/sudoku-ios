@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+    Las claves llevan el marcado `^[…](inflect: true)` porque la clave es el
+    texto fuente en inglés. Aquí se sustituye por formas explícitas de singular
+    y plural: es lo mismo que hace el acuerdo gramatical automático, pero sin
+    depender de que sepa flexionar el sustantivo español que le toque.
+
+    No hay fichero equivalente en inglés: el marcado del original ya resuelve
+    "1 day" frente a "3 days" sin ayuda.
+-->
+<plist version="1.0">
+<dict>
+    <key>^[%lld day](inflect: true) streak</key>
+    <dict>
+        <key>NSStringLocalizedFormatKey</key>
+        <string>%#@dias@</string>
+        <key>dias</key>
+        <dict>
+            <key>NSStringFormatSpecTypeKey</key>
+            <string>NSStringPluralRuleType</string>
+            <key>NSStringFormatValueTypeKey</key>
+            <string>lld</string>
+            <key>one</key>
+            <string>Racha de 1 día</string>
+            <key>other</key>
+            <string>Racha de %lld días</string>
+        </dict>
+    </dict>
+
+    <key>^[%lld day](inflect: true)</key>
+    <dict>
+        <key>NSStringLocalizedFormatKey</key>
+        <string>%#@dias@</string>
+        <key>dias</key>
+        <dict>
+            <key>NSStringFormatSpecTypeKey</key>
+            <string>NSStringPluralRuleType</string>
+            <key>NSStringFormatValueTypeKey</key>
+            <string>lld</string>
+            <key>one</key>
+            <string>1 día</string>
+            <key>other</key>
+            <string>%lld días</string>
+        </dict>
+    </dict>
+
+    <key>Best streak: ^[%lld day](inflect: true)</key>
+    <dict>
+        <key>NSStringLocalizedFormatKey</key>
+        <string>Mejor racha: %#@dias@</string>
+        <key>dias</key>
+        <dict>
+            <key>NSStringFormatSpecTypeKey</key>
+            <string>NSStringPluralRuleType</string>
+            <key>NSStringFormatValueTypeKey</key>
+            <string>lld</string>
+            <key>one</key>
+            <string>1 día</string>
+            <key>other</key>
+            <string>%lld días</string>
+        </dict>
+    </dict>
+
+    <key>^[%lld cell](inflect: true) left</key>
+    <dict>
+        <key>NSStringLocalizedFormatKey</key>
+        <string>%#@casillas@</string>
+        <key>casillas</key>
+        <dict>
+            <key>NSStringFormatSpecTypeKey</key>
+            <string>NSStringPluralRuleType</string>
+            <key>NSStringFormatValueTypeKey</key>
+            <string>lld</string>
+            <key>one</key>
+            <string>falta 1 casilla</string>
+            <key>other</key>
+            <string>faltan %lld casillas</string>
+        </dict>
+    </dict>
+
+    <key>Ready — ^[%lld day](inflect: true) streak at stake</key>
+    <dict>
+        <key>NSStringLocalizedFormatKey</key>
+        <string>%#@dias@</string>
+        <key>dias</key>
+        <dict>
+            <key>NSStringFormatSpecTypeKey</key>
+            <string>NSStringPluralRuleType</string>
+            <key>NSStringFormatValueTypeKey</key>
+            <string>lld</string>
+            <key>one</key>
+            <string>Listo: te juegas 1 día</string>
+            <key>other</key>
+            <string>Listo: te juegas %lld días</string>
+        </dict>
+    </dict>
+</dict>
+</plist>

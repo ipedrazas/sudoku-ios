@@ -192,7 +192,7 @@ struct WinCelebration: View {
     }
 
     /// A number over what it means.
-    private func statistic(_ label: String, _ value: String) -> some View {
+    private func statistic(_ label: LocalizedStringKey, _ value: String) -> some View {
         VStack(spacing: 2) {
             Text(value)
                 .font(.headline.monospacedDigit())

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+    Deliberately empty, and not deletable.
+
+    English needs no plural entries here: every counted phrase in the widget is
+    written with `^[…](inflect: true)`, and automatic grammar agreement resolves
+    it from the source text. Spanish does not rely on that, so es.lproj has a
+    real stringsdict — and a localized resource only ships if the development
+    language has its counterpart. Without this file XcodeGen builds no variant
+    group, the Spanish plurals are silently left out of the bundle, and the
+    widget reads "faltan 1 casillas".
+
+    Adding entries here would *change English*: a value found in this file wins
+    over the inflection markup in the key.
+-->
+<plist version="1.0">
+<dict/>
+</plist>

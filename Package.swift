@@ -7,6 +7,14 @@ import PackageDescription
 // development loop. Only the app shell needs Xcode.
 let package = Package(
     name: "SudokuKit",
+    // The kit owns the copy that teaches — hints, achievement names, difficulty
+    // labels — so it carries its own translations. `.lproj` directories of
+    // `.strings`, not a `.xcstrings` catalogue: SwiftPM *copies* a String
+    // Catalogue into the resource bundle verbatim rather than compiling it, so
+    // every lookup outside Xcode would silently fall back to the key. The older
+    // format is the one that behaves identically under `swift test` and under
+    // Xcode, and the command-line loop is the whole point of this target.
+    defaultLocalization: "en",
     platforms: [
         .iOS(.v18),
         .macOS(.v14),
@@ -18,6 +26,9 @@ let package = Package(
         .target(
             name: "SudokuKit",
             path: "SudokuKit/Sources/SudokuKit",
+            resources: [
+                .process("Resources")
+            ],
             swiftSettings: [
                 .swiftLanguageMode(.v6)
             ]

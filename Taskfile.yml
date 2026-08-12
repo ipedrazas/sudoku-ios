@@ -144,6 +144,11 @@ tasks:
     cmds:
       - ./scripts/typecheck.sh
 
+  localization:
+    desc: Check every localizable string is translated in every language the app ships
+    cmds:
+      - ./scripts/check-localization.py
+
   sounds:
     desc: Regenerate the sound effects into SudokuApp/Resources/Sounds
     cmds:

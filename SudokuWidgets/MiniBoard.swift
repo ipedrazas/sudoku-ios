@@ -130,6 +130,6 @@ struct MiniBoard: View {
     /// users get the same glance: how far in, not where every digit is.
     private var accessibilityLabel: String {
         let filled = board.filter { $0 != 0 }.count
-        return "Sudoku grid, \(filled) of 81 cells filled"
+        return String(localized: "Sudoku grid, \(filled) of 81 cells filled")
     }
 }

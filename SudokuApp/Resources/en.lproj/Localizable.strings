@@ -1,0 +1,254 @@
+/* SudokuApp — English.
+
+   The keys are the English source text, which is what SwiftUI's
+   `Text("literal")` and `String(localized:)` generate. Keeping this file as
+   identity mappings is therefore redundant at run time — a missing key returns
+   itself — and worth having anyway: it is the list of what has to be
+   translated, and `en.lproj` has to exist or a French phone would be served
+   Spanish rather than English.
+
+   Counted phrases live in Localizable.stringsdict, not here. */
+
+/* MARK: - Home */
+
+"Sudoku and Cake" = "Sudoku and Cake";
+"Daily puzzle" = "Daily puzzle";
+"Stats" = "Stats";
+"Import a puzzle" = "Import a puzzle";
+"Type one in from a newspaper" = "Type one in from a newspaper";
+"Settings" = "Settings";
+"How the game plays and feels" = "How the game plays and feels";
+"In progress" = "In progress";
+"Nothing yet. Games save themselves as you play, and turn up here." = "Nothing yet. Games save themselves as you play, and turn up here.";
+"New game" = "New game";
+"Every puzzle is solvable by logic alone." = "Every puzzle is solvable by logic alone.";
+
+"A new puzzle every day" = "A new puzzle every day";
+"Solved" = "Solved";
+"Not played yet" = "Not played yet";
+"Nothing solved yet" = "Nothing solved yet";
+
+/* The technique each difficulty actually requires, shown beside its name. */
+"scanning" = "scanning";
+"locked candidates" = "locked candidates";
+"and a little more" = "and a little more";
+"hidden pairs, X-wings" = "hidden pairs, X-wings";
+
+/* A saved game: difficulty, time played, cells left. */
+
+/* MARK: - Daily */
+
+"Daily" = "Daily";
+"Everyone gets the same puzzle each day. Miss one and you can still play it later." = "Everyone gets the same puzzle each day. Miss one and you can still play it later.";
+"Not started" = "Not started";
+"Solved in %@" = "Solved in %@";
+"In progress — %lld to go" = "In progress — %lld to go";
+"Play today's puzzle" = "Play today's puzzle";
+"Play it again" = "Play it again";
+"Continue" = "Continue";
+"best %lld" = "best %lld";
+"Remind me" = "Remind me";
+"At" = "At";
+"A single nudge on days you have not played. It stops as soon as you finish the daily." = "A single nudge on days you have not played. It stops as soon as you finish the daily.";
+
+/* MARK: - Calendar */
+
+"Calendar" = "Calendar";
+"Previous month" = "Previous month";
+"Next month" = "Next month";
+"Started" = "Started";
+"Not played" = "Not played";
+
+/* Spoken for one day in the grid: "Day 12, solved in 4:31". */
+"Day %lld, %@" = "Day %lld, %@";
+"solved in %@" = "solved in %@";
+"solved" = "solved";
+"in progress" = "in progress";
+"not played" = "not played";
+"not available yet" = "not available yet";
+
+/* MARK: - Board (VoiceOver)
+
+   Lower case on purpose: these are fragments assembled into one spoken
+   sentence, not labels drawn on screen. */
+
+"Sudoku board" = "Sudoku board";
+"row %lld, column %lld" = "row %lld, column %lld";
+"Row %lld, column %lld" = "Row %lld, column %lld";
+"given" = "given";
+"empty" = "empty";
+"notes %@" = "notes %@";
+"conflicts" = "conflicts";
+"hint" = "hint";
+
+/* Rotors — how a VoiceOver player jumps around the grid. */
+"Empty cells" = "Empty cells";
+"Conflicts" = "Conflicts";
+"Rows" = "Rows";
+"Columns" = "Columns";
+"Boxes" = "Boxes";
+"Row %lld" = "Row %lld";
+"Column %lld" = "Column %lld";
+"Box %lld" = "Box %lld";
+
+/* MARK: - Number pad */
+
+"%lld, all placed" = "%lld, all placed";
+"%lld, %lld remaining" = "%lld, %lld remaining";
+"Double tap and hold to add a note" = "Double tap and hold to add a note";
+
+/* MARK: - Control bar
+
+   The accessibility *identifier* for each of these is a fixed English slug set
+   in code — it is an address the UI tests use, and it does not translate. */
+
+"Undo" = "Undo";
+"Redo" = "Redo";
+"Erase" = "Erase";
+"Notes" = "Notes";
+"Hint" = "Hint";
+"%@, on" = "%@, on";
+
+/* MARK: - Game screen */
+
+"Elapsed time %@" = "Elapsed time %@";
+"Pause" = "Pause";
+"Resume" = "Resume";
+"Still there?" = "Still there?";
+"Keep going" = "Keep going";
+"The clock is still running. Pause it so a break doesn't count against your time?" = "The clock is still running. Pause it so a break doesn't count against your time?";
+"Restart" = "Restart";
+"Fill in all notes" = "Fill in all notes";
+"Share this puzzle" = "Share this puzzle";
+"Share as image" = "Share as image";
+"Share" = "Share";
+"More" = "More";
+"Done" = "Done";
+"A %@ Sudoku" = "A %@ Sudoku";
+"Same puzzle, no account needed." = "Same puzzle, no account needed.";
+
+/* MARK: - Hints */
+
+"Where?" = "Where?";
+"Why?" = "Why?";
+"Just tell me" = "Just tell me";
+"Erase it" = "Erase it";
+"Fill it in" = "Fill it in";
+
+/* MARK: - Win card */
+
+"Review board" = "Review board";
+"Time" = "Time";
+"Difficulty" = "Difficulty";
+"Hints" = "Hints";
+
+/* MARK: - Import */
+
+"Play this puzzle" = "Play this puzzle";
+"Paste" = "Paste";
+"Clear" = "Clear";
+"%lld of %lld clues" = "%lld of %lld clues";
+"A digit repeats" = "A digit repeats";
+"No solution" = "No solution";
+"More than one solution" = "More than one solution";
+"%@ · %lld clues" = "%@ · %lld clues";
+"No Sudoku with a single solution has fewer than 17 clues, so keep going." = "No Sudoku with a single solution has fewer than 17 clues, so keep going.";
+"Two cells in the same row, column or box hold the same digit. The clashing cells are marked." = "Two cells in the same row, column or box hold the same digit. The clashing cells are marked.";
+"These clues are legal but nothing completes them. Check for a mistyped digit." = "These clues are legal but nothing completes them. Check for a mistyped digit.";
+"More than one grid fits these clues, so there is no single right answer. Add another clue." = "More than one grid fits these clues, so there is no single right answer. Add another clue.";
+"Row %lld, column %lld, %@" = "Row %lld, column %lld, %@";
+
+/* What a rating means, in the vocabulary the hints use. */
+"Scanning alone will finish it." = "Scanning alone will finish it.";
+"Needs hidden singles — scanning, with a little care." = "Needs hidden singles — scanning, with a little care.";
+"Needs locked candidates or a naked pair." = "Needs locked candidates or a naked pair.";
+"Needs a hidden pair, naked triple, or X-wing." = "Needs a hidden pair, naked triple, or X-wing.";
+"Harder than anything this app generates. Hints may run out before the puzzle does." = "Harder than anything this app generates. Hints may run out before the puzzle does.";
+
+/* MARK: - Welcome */
+
+"No accounts, no ads, no internet. Just puzzles." = "No accounts, no ads, no internet. Just puzzles.";
+"Start playing" = "Start playing";
+/* "A new puzzle every day" is a welcome point's title as well as the home
+   screen's daily subtitle — the same sentence, deliberately. */
+"Everyone gets the same daily. Solve it to build a streak — and add a widget so you don't forget." = "Everyone gets the same daily. Solve it to build a streak — and add a widget so you don't forget.";
+"Notes are a long press" = "Notes are a long press";
+"Hold a number to pencil it in, or turn notes on to mark candidates as you narrow them down." = "Hold a number to pencil it in, or turn notes on to mark candidates as you narrow them down.";
+"Hints that teach" = "Hints that teach";
+"Ask for a nudge and it names the technique. Ask again and it shows you where. The answer is the last resort." = "Ask for a nudge and it names the technique. Ask again and it shows you where. The answer is the last resort.";
+
+/* MARK: - Settings */
+
+"Highlight mistakes" = "Highlight mistakes";
+"Input" = "Input";
+"Cell first" = "Cell first";
+"Digit first" = "Digit first";
+"Start with notes filled in" = "Start with notes filled in";
+"Playing" = "Playing";
+"Highlighting mistakes marks a clash as soon as you make it. It is off to begin with, because spotting them is part of the puzzle." = "Highlighting mistakes marks a clash as soon as you make it. It is off to begin with, because spotting them is part of the puzzle.";
+"Offer to pause after" = "Offer to pause after";
+"Never" = "Never";
+"Breaks" = "Breaks";
+"A puzzle left open while you answer the door should not ruin your best time." = "A puzzle left open while you answer the door should not ruin your best time.";
+"Daily reminder" = "Daily reminder";
+"One nudge on days you have not played. It stops as soon as you finish the daily." = "One nudge on days you have not played. It stops as soon as you finish the daily.";
+"Feel" = "Feel";
+"Haptics" = "Haptics";
+"Sound" = "Sound";
+"Theme" = "Theme";
+"System" = "System";
+"Light" = "Light";
+"Dark" = "Dark";
+"Show the welcome again" = "Show the welcome again";
+"Delete all data" = "Delete all data";
+"Puzzles, saved games, history and achievements, all of it on this device only. There is no copy anywhere else, so this cannot be undone." = "Puzzles, saved games, history and achievements, all of it on this device only. There is no copy anywhere else, so this cannot be undone.";
+"Puzzles solved" = "Puzzles solved";
+"Achievements" = "Achievements";
+"This device" = "This device";
+"No account, no sync, no tracking. Nothing here leaves the device." = "No account, no sync, no tracking. Nothing here leaves the device.";
+"Delete everything?" = "Delete everything?";
+"Keep it" = "Keep it";
+"%lld of %lld" = "%lld of %lld";
+
+/* MARK: - Notifications */
+
+"Your streak ends tonight" = "Your streak ends tonight";
+"Today's puzzle is waiting" = "Today's puzzle is waiting";
+"Keep your solve streak going." = "Keep your solve streak going.";
+
+/* MARK: - Stats */
+
+"Day streak" = "Day streak";
+"Best streak" = "Best streak";
+"Finished vs. open" = "Finished vs. open";
+"The last year" = "The last year";
+"One square a day, darker where you played more" = "One square a day, darker where you played more";
+"By difficulty" = "By difficulty";
+"Puzzles solved on each rung" = "Puzzles solved on each rung";
+"How long they take" = "How long they take";
+"Every solve, bucketed" = "Every solve, bucketed";
+"By day of the week" = "By day of the week";
+"By month" = "By month";
+"The last twelve, empty ones included" = "The last twelve, empty ones included";
+"Recently solved" = "Recently solved";
+"avg %@" = "avg %@";
+"best %@" = "best %@";
+"No finished puzzles yet" = "No finished puzzles yet";
+"Solve one and this fills up: streaks, times, and a year of squares." = "Solve one and this fills up: streaks, times, and a year of squares.";
+/* "More" is also the overflow menu's accessibility label. One word, one key,
+   and the translation has to work in both places. */
+"Less" = "Less";
+"%@: %@" = "%@: %@";
+"%@, no puzzles" = "%@, no puzzles";
+"%@, %@" = "%@, %@";
+
+/* Chart descriptions, read instead of the picture. */
+"Puzzles solved by difficulty" = "Puzzles solved by difficulty";
+"Solve times, bucketed" = "Solve times, bucketed";
+"Puzzles solved by day of the week" = "Puzzles solved by day of the week";
+"Puzzles solved by month" = "Puzzles solved by month";
+
+/* Chart axis and series names. Shown by VoiceOver when reading a chart. */
+"Day" = "Day";
+"Month" = "Month";
+"Solves" = "Solves";

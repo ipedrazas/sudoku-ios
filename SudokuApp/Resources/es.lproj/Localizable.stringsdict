@@ -1,0 +1,239 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+    Español: todo lo que cambia con el número.
+
+    Hay bastante más aquí que en inglés por dos motivos. Uno, el inglés dice "3
+    day streak" sin marca de plural y el español tiene que decir "racha de 3
+    días". Dos, varias claves originales usan el marcado `^[…](inflect: true)`
+    de acuerdo gramatical automático; aquí se sustituyen por formas explícitas,
+    que es lo mismo pero comprobable, y no depende de que el sistema sepa
+    flexionar cada sustantivo español que se le ponga por delante.
+-->
+<plist version="1.0">
+<dict>
+    <key>%lld puzzles solved</key>
+    <dict>
+        <key>NSStringLocalizedFormatKey</key>
+        <string>%#@sudokus@</string>
+        <key>sudokus</key>
+        <dict>
+            <key>NSStringFormatSpecTypeKey</key>
+            <string>NSStringPluralRuleType</string>
+            <key>NSStringFormatValueTypeKey</key>
+            <string>lld</string>
+            <key>one</key>
+            <string>1 sudoku resuelto</string>
+            <key>other</key>
+            <string>%lld sudokus resueltos</string>
+        </dict>
+    </dict>
+
+    <key>%@ · %lld achievements</key>
+    <dict>
+        <key>NSStringLocalizedFormatKey</key>
+        <string>%1$@ · %2$#@logros@</string>
+        <key>logros</key>
+        <dict>
+            <key>NSStringFormatSpecTypeKey</key>
+            <string>NSStringPluralRuleType</string>
+            <key>NSStringFormatValueTypeKey</key>
+            <string>lld</string>
+            <key>one</key>
+            <string>1 logro</string>
+            <key>other</key>
+            <string>%lld logros</string>
+        </dict>
+    </dict>
+
+    <key>%lld solved puzzles and every saved game. This cannot be undone.</key>
+    <dict>
+        <key>NSStringLocalizedFormatKey</key>
+        <string>%#@sudokus@</string>
+        <key>sudokus</key>
+        <dict>
+            <key>NSStringFormatSpecTypeKey</key>
+            <string>NSStringPluralRuleType</string>
+            <key>NSStringFormatValueTypeKey</key>
+            <string>lld</string>
+            <key>one</key>
+            <string>1 sudoku resuelto y todas las partidas guardadas. Esto no se puede deshacer.</string>
+            <key>other</key>
+            <string>%lld sudokus resueltos y todas las partidas guardadas. Esto no se puede deshacer.</string>
+        </dict>
+    </dict>
+
+    <key>%lld days so far. Today&apos;s Sudoku takes a few minutes.</key>
+    <dict>
+        <key>NSStringLocalizedFormatKey</key>
+        <string>%#@dias@</string>
+        <key>dias</key>
+        <dict>
+            <key>NSStringFormatSpecTypeKey</key>
+            <string>NSStringPluralRuleType</string>
+            <key>NSStringFormatValueTypeKey</key>
+            <string>lld</string>
+            <key>one</key>
+            <string>Llevas 1 día. El sudoku de hoy son unos minutos.</string>
+            <key>other</key>
+            <string>Llevas %lld días. El sudoku de hoy son unos minutos.</string>
+        </dict>
+    </dict>
+
+    <key>Not played — %lld day streak at stake</key>
+    <dict>
+        <key>NSStringLocalizedFormatKey</key>
+        <string>%#@dias@</string>
+        <key>dias</key>
+        <dict>
+            <key>NSStringFormatSpecTypeKey</key>
+            <string>NSStringPluralRuleType</string>
+            <key>NSStringFormatValueTypeKey</key>
+            <string>lld</string>
+            <key>one</key>
+            <string>Sin jugar: te juegas 1 día de racha</string>
+            <key>other</key>
+            <string>Sin jugar: te juegas %lld días de racha</string>
+        </dict>
+    </dict>
+
+    <key>Solved — %lld day streak</key>
+    <dict>
+        <key>NSStringLocalizedFormatKey</key>
+        <string>%#@dias@</string>
+        <key>dias</key>
+        <dict>
+            <key>NSStringFormatSpecTypeKey</key>
+            <string>NSStringPluralRuleType</string>
+            <key>NSStringFormatValueTypeKey</key>
+            <string>lld</string>
+            <key>one</key>
+            <string>Resuelto: 1 día de racha</string>
+            <key>other</key>
+            <string>Resuelto: %lld días de racha</string>
+        </dict>
+    </dict>
+
+    <key>In progress — %lld to go</key>
+    <dict>
+        <key>NSStringLocalizedFormatKey</key>
+        <string>%#@casillas@</string>
+        <key>casillas</key>
+        <dict>
+            <key>NSStringFormatSpecTypeKey</key>
+            <string>NSStringPluralRuleType</string>
+            <key>NSStringFormatValueTypeKey</key>
+            <string>lld</string>
+            <key>one</key>
+            <string>Empezado: falta 1</string>
+            <key>other</key>
+            <string>Empezado: faltan %lld</string>
+        </dict>
+    </dict>
+
+    <key>%lld, %lld remaining</key>
+    <dict>
+        <key>NSStringLocalizedFormatKey</key>
+        <string>%1$lld, %2$#@restantes@</string>
+        <key>restantes</key>
+        <dict>
+            <key>NSStringFormatSpecTypeKey</key>
+            <string>NSStringPluralRuleType</string>
+            <key>NSStringFormatValueTypeKey</key>
+            <string>lld</string>
+            <key>one</key>
+            <string>queda 1</string>
+            <key>other</key>
+            <string>quedan %lld</string>
+        </dict>
+    </dict>
+
+    <!-- A partir de aquí, las claves que en inglés llevan `^[…](inflect: true)`.
+         La clave incluye el marcado porque la clave es el texto fuente. -->
+
+    <key>^[%lld cell](inflect: true) left</key>
+    <dict>
+        <key>NSStringLocalizedFormatKey</key>
+        <string>%#@casillas@</string>
+        <key>casillas</key>
+        <dict>
+            <key>NSStringFormatSpecTypeKey</key>
+            <string>NSStringPluralRuleType</string>
+            <key>NSStringFormatValueTypeKey</key>
+            <string>lld</string>
+            <key>one</key>
+            <string>falta 1 casilla</string>
+            <key>other</key>
+            <string>faltan %lld casillas</string>
+        </dict>
+    </dict>
+
+    <key>%@, %@ played, ^[%lld cell](inflect: true) left</key>
+    <dict>
+        <key>NSStringLocalizedFormatKey</key>
+        <string>%1$@, %2$@ jugados, %3$#@casillas@</string>
+        <key>casillas</key>
+        <dict>
+            <key>NSStringFormatSpecTypeKey</key>
+            <string>NSStringPluralRuleType</string>
+            <key>NSStringFormatValueTypeKey</key>
+            <string>lld</string>
+            <key>one</key>
+            <string>falta 1 casilla</string>
+            <key>other</key>
+            <string>faltan %lld casillas</string>
+        </dict>
+    </dict>
+
+    <key>^[%lld day](inflect: true) streak</key>
+    <dict>
+        <key>NSStringLocalizedFormatKey</key>
+        <string>%#@dias@</string>
+        <key>dias</key>
+        <dict>
+            <key>NSStringFormatSpecTypeKey</key>
+            <string>NSStringPluralRuleType</string>
+            <key>NSStringFormatValueTypeKey</key>
+            <string>lld</string>
+            <key>one</key>
+            <string>Racha de 1 día</string>
+            <key>other</key>
+            <string>Racha de %lld días</string>
+        </dict>
+    </dict>
+
+    <key>Current streak ^[%lld day](inflect: true), best %lld</key>
+    <dict>
+        <key>NSStringLocalizedFormatKey</key>
+        <string>Racha actual %1$#@dias@, récord %2$lld</string>
+        <key>dias</key>
+        <dict>
+            <key>NSStringFormatSpecTypeKey</key>
+            <string>NSStringPluralRuleType</string>
+            <key>NSStringFormatValueTypeKey</key>
+            <string>lld</string>
+            <key>one</key>
+            <string>de 1 día</string>
+            <key>other</key>
+            <string>de %lld días</string>
+        </dict>
+    </dict>
+
+    <key>^[%lld minute](inflect: true)</key>
+    <dict>
+        <key>NSStringLocalizedFormatKey</key>
+        <string>%#@minutos@</string>
+        <key>minutos</key>
+        <dict>
+            <key>NSStringFormatSpecTypeKey</key>
+            <string>NSStringPluralRuleType</string>
+            <key>NSStringFormatValueTypeKey</key>
+            <string>lld</string>
+            <key>one</key>
+            <string>1 minuto</string>
+            <key>other</key>
+            <string>%lld minutos</string>
+        </dict>
+    </dict>
+</dict>
+</plist>
