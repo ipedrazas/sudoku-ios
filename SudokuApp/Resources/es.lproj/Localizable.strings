@@ -1,0 +1,248 @@
+/* SudokuApp — español.
+
+   Glosario, para que la app diga siempre lo mismo:
+     cell → casilla        row → fila          column → columna
+     box → bloque          digit → número      clue → pista
+     hint → ayuda          note → nota         streak → racha
+     given → dada          board → tablero     puzzle → sudoku
+
+   "hint" es "ayuda" y no "pista": una pista es lo que trae el sudoku impreso
+   (clue), y la app usa las dos palabras en la misma pantalla — la de importar
+   cuenta pistas mientras el juego ofrece ayudas.
+
+   Las frases con número van en Localizable.stringsdict. */
+
+/* MARK: - Inicio */
+
+"Sudoku and Cake" = "Sudoku and Cake";
+"Daily puzzle" = "Sudoku diario";
+"Stats" = "Estadísticas";
+"Import a puzzle" = "Importar un sudoku";
+"Type one in from a newspaper" = "Copia uno del periódico";
+"Settings" = "Ajustes";
+"How the game plays and feels" = "Cómo se juega y cómo se siente";
+"In progress" = "Empezado";
+"Nothing yet. Games save themselves as you play, and turn up here." = "Aquí no hay nada todavía. Las partidas se guardan solas mientras juegas y aparecen aquí.";
+"New game" = "Partida nueva";
+"Every puzzle is solvable by logic alone." = "Todos los sudokus se resuelven solo con lógica.";
+
+"A new puzzle every day" = "Un sudoku nuevo cada día";
+"Solved" = "Resuelto";
+"Not played yet" = "Sin jugar";
+"Nothing solved yet" = "Aún no has resuelto ninguno";
+
+/* La técnica que hace falta en cada nivel, al lado de su nombre. */
+"scanning" = "mirar y tachar";
+"locked candidates" = "candidatos bloqueados";
+"and a little more" = "y algo más";
+"hidden pairs, X-wings" = "parejas ocultas, X-wings";
+
+/* Una partida guardada: nivel, tiempo jugado, casillas que faltan. */
+
+/* MARK: - Diario */
+
+"Daily" = "Diario";
+"Everyone gets the same puzzle each day. Miss one and you can still play it later." = "Cada día es el mismo sudoku para todo el mundo. Si te saltas uno, lo puedes jugar más tarde.";
+"Not started" = "Sin empezar";
+"Solved in %@" = "Resuelto en %@";
+"Play today's puzzle" = "Jugar el de hoy";
+"Play it again" = "Jugarlo otra vez";
+"Continue" = "Continuar";
+"best %lld" = "récord %lld";
+"Remind me" = "Avisarme";
+"At" = "A las";
+"A single nudge on days you have not played. It stops as soon as you finish the daily." = "Un solo aviso los días que no hayas jugado. Deja de avisar en cuanto termines el diario.";
+
+/* MARK: - Calendario */
+
+"Calendar" = "Calendario";
+"Previous month" = "Mes anterior";
+"Next month" = "Mes siguiente";
+"Started" = "Empezado";
+"Not played" = "Sin jugar";
+
+/* Lo que se lee de un día del calendario: "Día 12, resuelto en 4:31". */
+"Day %lld, %@" = "Día %lld, %@";
+"solved in %@" = "resuelto en %@";
+"solved" = "resuelto";
+"in progress" = "empezado";
+"not played" = "sin jugar";
+"not available yet" = "todavía no disponible";
+
+/* MARK: - Tablero (VoiceOver)
+
+   En minúscula a propósito: son trozos que se juntan en una sola frase hablada,
+   no etiquetas dibujadas en pantalla. */
+
+"Sudoku board" = "Tablero de sudoku";
+"row %lld, column %lld" = "fila %lld, columna %lld";
+"Row %lld, column %lld" = "Fila %lld, columna %lld";
+"given" = "dada";
+"empty" = "vacía";
+"notes %@" = "notas %@";
+"conflicts" = "en conflicto";
+"hint" = "con ayuda";
+
+/* Rotores: cómo se salta por el tablero con VoiceOver. */
+"Empty cells" = "Casillas vacías";
+"Conflicts" = "Conflictos";
+"Rows" = "Filas";
+"Columns" = "Columnas";
+"Boxes" = "Bloques";
+"Row %lld" = "Fila %lld";
+"Column %lld" = "Columna %lld";
+"Box %lld" = "Bloque %lld";
+
+/* MARK: - Teclado numérico */
+
+"%lld, all placed" = "%lld, todos colocados";
+"Double tap and hold to add a note" = "Toca dos veces y mantén para anotar";
+
+/* MARK: - Barra de controles */
+
+"Undo" = "Deshacer";
+"Redo" = "Rehacer";
+"Erase" = "Borrar";
+"Notes" = "Notas";
+"Hint" = "Ayuda";
+"%@, on" = "%@, activado";
+
+/* MARK: - Pantalla de juego */
+
+"Elapsed time %@" = "Tiempo transcurrido %@";
+"Pause" = "Pausa";
+"Resume" = "Reanudar";
+"Still there?" = "¿Sigues ahí?";
+"Keep going" = "Seguir jugando";
+"The clock is still running. Pause it so a break doesn't count against your time?" = "El reloj sigue corriendo. ¿Lo paramos para que el descanso no te cuente?";
+"Restart" = "Empezar de nuevo";
+"Fill in all notes" = "Rellenar todas las notas";
+"Share this puzzle" = "Compartir este sudoku";
+"Share as image" = "Compartir como imagen";
+"Share" = "Compartir";
+"More" = "Más";
+"Done" = "Listo";
+"A %@ Sudoku" = "Un sudoku de nivel %@";
+"Same puzzle, no account needed." = "El mismo sudoku, sin necesidad de cuenta.";
+
+/* MARK: - Ayudas */
+
+"Where?" = "¿Dónde?";
+"Why?" = "¿Por qué?";
+"Just tell me" = "Dímelo y ya";
+"Erase it" = "Borrarlo";
+"Fill it in" = "Rellenarlo";
+
+/* MARK: - Tarjeta final */
+
+"Review board" = "Ver el tablero";
+"Time" = "Tiempo";
+"Difficulty" = "Nivel";
+"Hints" = "Ayudas";
+
+/* MARK: - Importar */
+
+"Play this puzzle" = "Jugar este sudoku";
+"Paste" = "Pegar";
+"Clear" = "Vaciar";
+"%lld of %lld clues" = "%1$lld de %2$lld pistas";
+"A digit repeats" = "Hay un número repetido";
+"No solution" = "No tiene solución";
+"More than one solution" = "Tiene más de una solución";
+"%@ · %lld clues" = "%1$@ · %2$lld pistas";
+"No Sudoku with a single solution has fewer than 17 clues, so keep going." = "Ningún sudoku con solución única tiene menos de 17 pistas, así que sigue.";
+"Two cells in the same row, column or box hold the same digit. The clashing cells are marked." = "Dos casillas de la misma fila, columna o bloque llevan el mismo número. Las casillas que chocan están marcadas.";
+"These clues are legal but nothing completes them. Check for a mistyped digit." = "Estas pistas son legales, pero no hay nada que las complete. Mira a ver si has tecleado mal algún número.";
+"More than one grid fits these clues, so there is no single right answer. Add another clue." = "Hay más de un tablero que encaja con estas pistas, así que no hay una única respuesta correcta. Añade otra pista.";
+"Row %lld, column %lld, %@" = "Fila %1$lld, columna %2$lld, %3$@";
+
+/* Qué significa la valoración, con el vocabulario que usan las ayudas. */
+"Scanning alone will finish it." = "Se termina solo mirando y tachando.";
+"Needs hidden singles — scanning, with a little care." = "Necesita únicos ocultos: mirar y tachar, con algo de cuidado.";
+"Needs locked candidates or a naked pair." = "Necesita candidatos bloqueados o una pareja desnuda.";
+"Needs a hidden pair, naked triple, or X-wing." = "Necesita una pareja oculta, un trío desnudo o un X-wing.";
+"Harder than anything this app generates. Hints may run out before the puzzle does." = "Más difícil que cualquiera de los que genera esta app. Puede que se acaben las ayudas antes que el sudoku.";
+
+/* MARK: - Bienvenida */
+
+"No accounts, no ads, no internet. Just puzzles." = "Sin cuentas, sin anuncios, sin internet. Solo sudokus.";
+"Start playing" = "Empezar a jugar";
+"Everyone gets the same daily. Solve it to build a streak — and add a widget so you don't forget." = "El diario es el mismo para todo el mundo. Resuélvelo para ir haciendo racha, y añade un widget para no olvidarte.";
+"Notes are a long press" = "Las notas son una pulsación larga";
+"Hold a number to pencil it in, or turn notes on to mark candidates as you narrow them down." = "Mantén pulsado un número para anotarlo a lápiz, o activa las notas para ir marcando candidatos según los descartes.";
+"Hints that teach" = "Ayudas que enseñan";
+"Ask for a nudge and it names the technique. Ask again and it shows you where. The answer is the last resort." = "Pide un empujón y te dice qué técnica es. Pide otro y te enseña dónde. La respuesta es el último recurso.";
+
+/* MARK: - Ajustes */
+
+"Highlight mistakes" = "Marcar los errores";
+"Input" = "Forma de jugar";
+"Cell first" = "Primero la casilla";
+"Digit first" = "Primero el número";
+"Start with notes filled in" = "Empezar con las notas puestas";
+"Playing" = "Juego";
+"Highlighting mistakes marks a clash as soon as you make it. It is off to begin with, because spotting them is part of the puzzle." = "Marcar los errores señala cada choque en cuanto lo cometes. Viene desactivado porque darse cuenta también es parte del sudoku.";
+"Offer to pause after" = "Ofrecer pausa tras";
+"Never" = "Nunca";
+"Breaks" = "Descansos";
+"A puzzle left open while you answer the door should not ruin your best time." = "Dejar el sudoku abierto para abrir la puerta no debería cargarse tu mejor tiempo.";
+"Daily reminder" = "Aviso diario";
+"One nudge on days you have not played. It stops as soon as you finish the daily." = "Un aviso los días que no hayas jugado. Deja de avisar en cuanto termines el diario.";
+"Feel" = "Sensación";
+"Haptics" = "Vibración";
+"Sound" = "Sonido";
+"Theme" = "Aspecto";
+"System" = "El del sistema";
+"Light" = "Claro";
+"Dark" = "Oscuro";
+"Show the welcome again" = "Ver otra vez la bienvenida";
+"Delete all data" = "Borrar todos los datos";
+"Puzzles, saved games, history and achievements, all of it on this device only. There is no copy anywhere else, so this cannot be undone." = "Sudokus, partidas guardadas, historial y logros, todo ello solo en este dispositivo. No hay copia en ningún otro sitio, así que esto no se puede deshacer.";
+"Puzzles solved" = "Sudokus resueltos";
+"Achievements" = "Logros";
+"This device" = "Este dispositivo";
+"No account, no sync, no tracking. Nothing here leaves the device." = "Sin cuenta, sin sincronización, sin rastreo. De aquí no sale nada.";
+"Delete everything?" = "¿Borrarlo todo?";
+"Keep it" = "Dejarlo como está";
+"%lld of %lld" = "%1$lld de %2$lld";
+
+/* MARK: - Avisos */
+
+"Your streak ends tonight" = "Tu racha se acaba esta noche";
+"Today's puzzle is waiting" = "El sudoku de hoy te está esperando";
+"Keep your solve streak going." = "No dejes que se corte la racha.";
+
+/* MARK: - Estadísticas */
+
+"Day streak" = "Racha";
+"Best streak" = "Mejor racha";
+"Finished vs. open" = "Terminados frente a abiertos";
+"The last year" = "El último año";
+"One square a day, darker where you played more" = "Un cuadro por día, más oscuro donde más jugaste";
+"By difficulty" = "Por nivel";
+"Puzzles solved on each rung" = "Sudokus resueltos en cada nivel";
+"How long they take" = "Lo que se tarda";
+"Every solve, bucketed" = "Todas las resoluciones, por tramos";
+"By day of the week" = "Por día de la semana";
+"By month" = "Por mes";
+"The last twelve, empty ones included" = "Los últimos doce, incluidos los vacíos";
+"Recently solved" = "Resueltos hace poco";
+"avg %@" = "media %@";
+"best %@" = "récord %@";
+"No finished puzzles yet" = "Todavía no has terminado ninguno";
+"Solve one and this fills up: streaks, times, and a year of squares." = "Resuelve uno y esto se llena: rachas, tiempos y un año de cuadritos.";
+"Less" = "Menos";
+"%@: %@" = "%1$@: %2$@";
+"%@, no puzzles" = "%@, ningún sudoku";
+"%@, %@" = "%1$@, %2$@";
+
+/* Descripciones de las gráficas, que se leen en lugar del dibujo. */
+"Puzzles solved by difficulty" = "Sudokus resueltos por nivel";
+"Solve times, bucketed" = "Tiempos de resolución, por tramos";
+"Puzzles solved by day of the week" = "Sudokus resueltos por día de la semana";
+"Puzzles solved by month" = "Sudokus resueltos por mes";
+
+/* Nombres de ejes y series de las gráficas. VoiceOver los lee al describirlas. */
+"Day" = "Día";
+"Month" = "Mes";
+"Solves" = "Resoluciones";

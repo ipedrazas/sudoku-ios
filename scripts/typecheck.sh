@@ -20,10 +20,23 @@ TARGET=arm64-apple-ios18.0-simulator
 BUILD=${TMPDIR:-/tmp}/sudoku-typecheck
 mkdir -p "$BUILD"
 
+# SudokuKit ships translations, so it has resources, so SwiftPM generates a
+# `Bundle.module` accessor for it. There is no SwiftPM here — this is plain
+# swiftc — so the accessor is synthesised instead. It is never called: nothing
+# is run, only type-checked, and the real accessor comes from whichever build
+# system actually produces the binary.
+cat > "$BUILD/resource_bundle_accessor.swift" <<'SWIFT'
+import Foundation
+
+extension Bundle {
+    static let module = Bundle.main
+}
+SWIFT
+
 echo "==> SudokuKit"
-swiftc -emit-module -module-name SudokuKit -sdk "$SDK" -target "$TARGET" \
+swiftc -emit-module -disable-sandbox -module-name SudokuKit -sdk "$SDK" -target "$TARGET" \
     -swift-version 6 -emit-module-path "$BUILD/SudokuKit.swiftmodule" \
-    SudokuKit/Sources/SudokuKit/*.swift
+    SudokuKit/Sources/SudokuKit/*.swift "$BUILD/resource_bundle_accessor.swift"
 
 # The app and the widget are separate modules that happen to share Sources/Shared,
 # so they are checked separately — exactly as the real build compiles them.

@@ -3,17 +3,26 @@
 /// Port of `backend/internal/achievements/achievements.go`.
 public struct Achievement: Equatable, Sendable, Identifiable {
     public let key: String
-    public let name: String
-    public let detail: String
     /// Icon family: star, zap, trophy, fire.
     public let icon: String
 
     public var id: String { key }
 
-    public init(key: String, name: String, detail: String, icon: String) {
+    /// Title, translated.
+    ///
+    /// Looked up on each access rather than stored, because the catalogue is a
+    /// `static let`: a stored name would be resolved the first time anything
+    /// touched `Achievements.all` and then be that language for the rest of the
+    /// process. That is invisible in the app, where the language cannot change
+    /// under a running process, and wrong in the tests, which switch language
+    /// deliberately.
+    public var name: String { Copy.text("achievement.\(key).name") }
+
+    /// What unlocks it, translated. Resolved per access, as `name` is.
+    public var detail: String { Copy.text("achievement.\(key).detail") }
+
+    public init(key: String, icon: String) {
         self.key = key
-        self.name = name
-        self.detail = detail
         self.icon = icon
     }
 }
@@ -26,36 +35,31 @@ public struct Achievement: Equatable, Sendable, Identifiable {
 /// redefining them; genuinely new achievements get genuinely new keys.
 public enum Achievements {
     /// The canonical list, in display order.
+    ///
+    /// Key and icon only: the title and the description live in
+    /// `Localizable.strings` under `achievement.<key>.name` and
+    /// `achievement.<key>.detail`, which is also why the keys being frozen
+    /// matters twice over — they are the join to the web app's table *and* the
+    /// join to every translation.
     public static let all: [Achievement] = [
         // First solve per difficulty.
-        Achievement(
-            key: "first_easy_solve", name: "Easy Start", detail: "Complete your first easy puzzle", icon: "star"),
-        Achievement(
-            key: "first_medium_solve", name: "Stepping Up", detail: "Complete your first medium puzzle", icon: "star"
-        ),
-        Achievement(key: "first_hard_solve", name: "Fearless", detail: "Complete your first hard puzzle", icon: "star"),
+        Achievement(key: "first_easy_solve", icon: "star"),
+        Achievement(key: "first_medium_solve", icon: "star"),
+        Achievement(key: "first_hard_solve", icon: "star"),
 
         // Speed.
-        Achievement(
-            key: "speed_easy_5m", name: "Quick Fingers", detail: "Solve an easy puzzle in under 5 minutes", icon: "zap"
-        ),
-        Achievement(
-            key: "speed_medium_10m", name: "Sharp Mind", detail: "Solve a medium puzzle in under 10 minutes",
-            icon: "zap"
-        ),
-        Achievement(
-            key: "speed_hard_20m", name: "Lightning Solve", detail: "Solve a hard puzzle in under 20 minutes",
-            icon: "zap"
-        ),
+        Achievement(key: "speed_easy_5m", icon: "zap"),
+        Achievement(key: "speed_medium_10m", icon: "zap"),
+        Achievement(key: "speed_hard_20m", icon: "zap"),
 
         // Milestones.
-        Achievement(key: "games_10", name: "Getting Started", detail: "Complete 10 games", icon: "trophy"),
-        Achievement(key: "games_50", name: "Dedicated", detail: "Complete 50 games", icon: "trophy"),
-        Achievement(key: "games_100", name: "Centurion", detail: "Complete 100 games", icon: "trophy"),
+        Achievement(key: "games_10", icon: "trophy"),
+        Achievement(key: "games_50", icon: "trophy"),
+        Achievement(key: "games_100", icon: "trophy"),
 
         // Streaks.
-        Achievement(key: "streak_7", name: "Week Warrior", detail: "Maintain a 7-day solve streak", icon: "fire"),
-        Achievement(key: "streak_30", name: "Monthly Master", detail: "Maintain a 30-day solve streak", icon: "fire"),
+        Achievement(key: "streak_7", icon: "fire"),
+        Achievement(key: "streak_30", icon: "fire"),
     ]
 
     private static let byKey: [String: Achievement] = Dictionary(

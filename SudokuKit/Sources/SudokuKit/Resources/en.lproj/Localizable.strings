@@ -1,0 +1,115 @@
+/* SudokuKit — the copy that teaches.
+
+   Units carry their article in languages that have one ("la fila 4", "el bloque
+   4"), so a sentence must never place a preposition that contracts with it
+   directly before %@. In Spanish that means "en", never "de" or "a": "de el
+   bloque 4" is not Spanish, and the translator cannot fix it from here. */
+
+/* MARK: - Units */
+
+"unit.row" = "row %d";
+"unit.column" = "column %d";
+"unit.box" = "box %d";
+
+/* MARK: - Difficulty */
+
+"difficulty.easy" = "Easy";
+"difficulty.medium" = "Medium";
+"difficulty.hard" = "Hard";
+"difficulty.expert" = "Expert";
+
+/* MARK: - Achievements */
+
+"achievement.first_easy_solve.name" = "Easy Start";
+"achievement.first_easy_solve.detail" = "Complete your first easy puzzle";
+"achievement.first_medium_solve.name" = "Stepping Up";
+"achievement.first_medium_solve.detail" = "Complete your first medium puzzle";
+"achievement.first_hard_solve.name" = "Fearless";
+"achievement.first_hard_solve.detail" = "Complete your first hard puzzle";
+"achievement.speed_easy_5m.name" = "Quick Fingers";
+"achievement.speed_easy_5m.detail" = "Solve an easy puzzle in under 5 minutes";
+"achievement.speed_medium_10m.name" = "Sharp Mind";
+"achievement.speed_medium_10m.detail" = "Solve a medium puzzle in under 10 minutes";
+"achievement.speed_hard_20m.name" = "Lightning Solve";
+"achievement.speed_hard_20m.detail" = "Solve a hard puzzle in under 20 minutes";
+"achievement.games_10.name" = "Getting Started";
+"achievement.games_10.detail" = "Complete 10 games";
+"achievement.games_50.name" = "Dedicated";
+"achievement.games_50.detail" = "Complete 50 games";
+"achievement.games_100.name" = "Centurion";
+"achievement.games_100.detail" = "Complete 100 games";
+"achievement.streak_7.name" = "Week Warrior";
+"achievement.streak_7.detail" = "Maintain a 7-day solve streak";
+"achievement.streak_30.name" = "Monthly Master";
+"achievement.streak_30.detail" = "Maintain a 30-day solve streak";
+
+/* MARK: - Hints: a wrong entry
+
+   Checked before any technique, so these are the only hints a player with a
+   mistake on the board ever sees. %1$@ is a cell in R5C2 notation. */
+
+"hint.mistake.nudge" = "Something above here doesn't add up. Try checking your entries.";
+"hint.mistake.locate" = "There's a mistake in %@.";
+"hint.mistake.explain" = "%1$@ contains %2$d, but it can't — that leaves the puzzle unsolvable.";
+"hint.mistake.reveal" = "%1$@ should be %2$d, not %3$d.";
+
+/* MARK: - Hints: nothing to do */
+
+"hint.solved" = "Solved — nothing left to find.";
+"hint.stuck.teaching" = "This one needs a technique beyond scanning and simple patterns.";
+"hint.stuck.none" = "No hint available.";
+
+/* The answer, once the player has asked for it outright. Shared by every
+   technique that places a digit, because there is only one way to say it. */
+"hint.reveal.placement" = "%1$@ is %2$d.";
+
+/* MARK: - Hints: naked single */
+
+"hint.nakedSingle.nudge" = "There's a cell with only one possible digit.";
+"hint.nakedSingle.locate" = "Look at %@ — only one digit fits.";
+"hint.nakedSingle.explain" = "Every digit but one already appears in %@'s row, column or box, so that one is left.";
+
+/* MARK: - Hints: hidden single */
+
+"hint.hiddenSingle.nudge" = "There's a hidden single in %@.";
+"hint.hiddenSingle.locate" = "In %@, one digit has only one cell left to go in.";
+"hint.hiddenSingle.explain" = "%1$@ is the only cell in %2$@ that can hold %3$d — every other cell is blocked.";
+
+/* MARK: - Hints: locked candidate */
+
+"hint.lockedCandidate.nudge" = "A digit in %@ is locked to one line.";
+"hint.lockedCandidate.locate" = "In %1$@, %2$d can only appear along %3$@.";
+"hint.lockedCandidate.explain" = "Every place %1$d could go in %2$@ lies on %3$@, so %1$d can be ruled out of %4$@ on that line.";
+"hint.lockedCandidate.reveal" = "Remove %1$d from %2$@.";
+
+/* MARK: - Hints: naked subset */
+
+"hint.nakedPair.nudge" = "There's a naked pair in %@.";
+"hint.nakedTriple.nudge" = "There's a naked triple in %@.";
+"hint.nakedSubset.locate" = "Look at %1$@ in %2$@.";
+"hint.nakedSubset.explain" = "%1$@ can only hold %2$@ between them, so those digits are used up — no other cell in %3$@ can take them.";
+"hint.nakedSubset.reveal" = "Remove %1$@ from %2$@.";
+
+/* MARK: - Hints: hidden subset */
+
+"hint.hiddenPair.nudge" = "There's a hidden pair in %@.";
+"hint.hiddenTriple.nudge" = "There's a hidden triple in %@.";
+"hint.hiddenSubset.locate" = "In %1$@, watch where %2$@ can go.";
+"hint.hiddenSubset.explain" = "%1$@ can only go in %2$@, so those cells hold nothing else.";
+"hint.hiddenSubset.reveal" = "Reduce %1$@ to %2$@.";
+
+/* MARK: - Hints: X-wing */
+
+"hint.xWing.nudge" = "There's an X-wing on %d.";
+"hint.xWing.locate" = "Compare %1$@ — %2$d sits in the same two positions in each.";
+"hint.xWing.explain" = "%1$d appears in exactly the same two positions in %2$@. Whichever way round it falls, those two crossing lines are covered, so %1$d can be ruled out of them elsewhere.";
+"hint.xWing.reveal" = "Remove %1$d from %2$@.";
+
+/* MARK: - Lists
+
+   Joining cells and digits is a language decision, not a formatting one:
+   English's "A and B" is Spanish's "A y B", and the separator before the last
+   item is not the same as the one between the others in every language. */
+
+"list.separator" = ", ";
+"list.conjunction" = " and ";

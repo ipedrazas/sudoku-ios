@@ -78,24 +78,35 @@ struct ImportScreen: View {
 
     private var headline: String {
         switch model.status {
-        case .tooFewClues(let clues): "\(clues) of \(ImportModel.minimumClues) clues"
-        case .breaksRules: "A digit repeats"
-        case .unsolvable: "No solution"
-        case .notUnique: "More than one solution"
-        case .ready(let tier, let clues): "\(ImportModel.difficulty(for: tier).name) · \(clues) clues"
+        case .tooFewClues(let clues): String(localized: "\(clues) of \(ImportModel.minimumClues) clues")
+        case .breaksRules: String(localized: "A digit repeats")
+        case .unsolvable: String(localized: "No solution")
+        case .notUnique: String(localized: "More than one solution")
+        case .ready(let tier, let clues):
+            String(localized: "\(ImportModel.difficulty(for: tier).name) · \(clues) clues")
         }
     }
 
     private var detail: String {
         switch model.status {
         case .tooFewClues:
-            "No Sudoku with a single solution has fewer than 17 clues, so keep going."
+            String(localized: "No Sudoku with a single solution has fewer than 17 clues, so keep going.")
         case .breaksRules:
-            "Two cells in the same row, column or box hold the same digit. The clashing cells are marked."
+            // Wrapped with a line continuation, so the key is still the one
+            // sentence it looks like rather than a sentence with a newline in
+            // the middle that no strings file will ever match.
+            String(
+                localized: """
+                    Two cells in the same row, column or box hold the same digit. \
+                    The clashing cells are marked.
+                    """
+            )
         case .unsolvable:
-            "These clues are legal but nothing completes them. Check for a mistyped digit."
+            String(localized: "These clues are legal but nothing completes them. Check for a mistyped digit.")
         case .notUnique:
-            "More than one grid fits these clues, so there is no single right answer. Add another clue."
+            String(
+                localized: "More than one grid fits these clues, so there is no single right answer. Add another clue."
+            )
         case .ready(let tier, _):
             ImportModel.describe(tier)
         }
@@ -165,9 +176,15 @@ private struct ImportGrid: View {
         .accessibilityElement()
         .accessibilityIdentifier("import.cell.\(cell.index)")
         .accessibilityLabel(
-            "Row \(cell.row + 1), column \(cell.col + 1), \(value == 0 ? "empty" : String(value))"
+            String(localized: "Row \(cell.row + 1), column \(cell.col + 1), \(contents(of: value))")
         )
         .accessibilityAddTraits(isSelected ? [.isSelected, .isButton] : [.isButton])
+    }
+
+    /// What a cell holds, as VoiceOver says it. A digit is a digit in every
+    /// language; "empty" is a word.
+    private func contents(of value: Int) -> String {
+        value == 0 ? String(localized: "empty") : String(value)
     }
 
     /// The 3×3 boundaries.

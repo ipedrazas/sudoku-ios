@@ -27,31 +27,46 @@ struct ControlBar: View {
 
     var body: some View {
         HStack(spacing: 0) {
-            control("Undo", systemImage: "arrow.uturn.backward", enabled: session.canUndo) {
+            control("Undo", id: "undo", systemImage: "arrow.uturn.backward", enabled: session.canUndo) {
                 session.undo()
             }
-            control("Redo", systemImage: "arrow.uturn.forward", enabled: session.canRedo) {
+            control("Redo", id: "redo", systemImage: "arrow.uturn.forward", enabled: session.canRedo) {
                 session.redo()
             }
-            control("Erase", systemImage: "eraser", enabled: session.selection != nil) {
+            control("Erase", id: "erase", systemImage: "eraser", enabled: session.selection != nil) {
                 session.erase()
             }
             control(
                 "Notes",
+                id: "notes",
                 systemImage: session.isPencilMode ? "pencil.circle.fill" : "pencil.circle",
                 enabled: true,
                 isActive: session.isPencilMode
             ) {
                 session.toggleNotes()
             }
-            control("Hint", systemImage: "lightbulb", enabled: !session.isSolved, badge: session.hintPoints) {
+            control(
+                "Hint",
+                id: "hint",
+                systemImage: "lightbulb",
+                enabled: !session.isSolved,
+                badge: session.hintPoints
+            ) {
                 onHint()
             }
         }
     }
 
+    /// `id` is passed rather than derived from `title`.
+    ///
+    /// The identifier used to be `title.lowercased()`, which was fine while the
+    /// title was English by definition. It is not any more: `control.hint` would
+    /// become `control.pista` on a Spanish phone, and the UI tests that tap it
+    /// by name would fail everywhere except in English. An accessibility
+    /// identifier is an address, not a label — it does not translate.
     private func control(
-        _ title: String,
+        _ title: LocalizedStringKey,
+        id: String,
         systemImage: String,
         enabled: Bool,
         isActive: Bool = false,
@@ -92,7 +107,7 @@ struct ControlBar: View {
         }
         .buttonStyle(.plain)
         .disabled(!enabled)
-        .accessibilityIdentifier("control.\(title.lowercased())")
-        .accessibilityLabel(isActive ? "\(title), on" : title)
+        .accessibilityIdentifier("control.\(id)")
+        .accessibilityLabel(isActive ? Text("\(Text(title)), on") : Text(title))
     }
 }

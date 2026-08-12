@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+    Counted phrases carry their own article, because the article agrees with the
+    count in most languages and cannot be written into the surrounding sentence:
+    Spanish needs "la otra casilla" against "las otras 3 casillas", and a
+    sentence that supplied "las otras" itself would be wrong half the time.
+-->
+<plist version="1.0">
+<dict>
+    <key>hint.lockedCandidate.otherCells</key>
+    <dict>
+        <key>NSStringLocalizedFormatKey</key>
+        <string>%#@cells@</string>
+        <key>cells</key>
+        <dict>
+            <key>NSStringFormatSpecTypeKey</key>
+            <string>NSStringPluralRuleType</string>
+            <key>NSStringFormatValueTypeKey</key>
+            <string>d</string>
+            <key>one</key>
+            <string>the other cell</string>
+            <key>other</key>
+            <string>the other %d cells</string>
+        </dict>
+    </dict>
+</dict>
+</plist>

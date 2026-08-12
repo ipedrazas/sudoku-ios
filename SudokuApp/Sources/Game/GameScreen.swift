@@ -270,7 +270,7 @@ private struct HintSheet: View {
         .presentationBackgroundInteraction(.enabled(upThrough: .height(240)))
     }
 
-    private var nextLabel: String {
+    private var nextLabel: LocalizedStringKey {
         switch level {
         case .nudge: "Where?"
         case .locate: "Why?"
@@ -286,7 +286,7 @@ private struct HintSheet: View {
         return false
     }
 
-    private var applyLabel: String { isMistake ? "Erase it" : "Fill it in" }
+    private var applyLabel: LocalizedStringKey { isMistake ? "Erase it" : "Fill it in" }
     private var applySymbol: String { isMistake ? "eraser" : "wand.and.stars" }
 
     private func escalate() {

@@ -1,0 +1,44 @@
+/* SudokuWidgets — español.
+
+   Mismo glosario que la app (racha, casilla, sudoku diario). El widget es otro
+   proceso con otro bundle, así que no puede leer las cadenas de la app: lo que
+   se repite entre los dos ficheros se repite a propósito.
+
+   El espacio manda. En la pantalla de bloqueo cabe muy poco, así que las frases
+   de ahí son más cortas que su original en inglés en lugar de más largas, que
+   es lo que suele pasar al traducir al español. */
+
+/* MARK: - Galería */
+
+"Daily puzzle" = "Sudoku diario";
+"Today's Sudoku, and how your streak is doing." = "El sudoku de hoy, y cómo va tu racha.";
+"Streak" = "Racha";
+"Whether today's puzzle is still waiting." = "Si el sudoku de hoy sigue esperando.";
+
+/* MARK: - Pantalla de inicio */
+
+"Daily" = "Diario";
+"Open the app to begin" = "Abre la app para empezar";
+"Keep the streak going" = "Mantén la racha";
+"Today's puzzle is ready" = "El sudoku de hoy está listo";
+"Picked up, not finished" = "Empezado, sin terminar";
+"Solved today" = "Resuelto hoy";
+"Open the app to start it." = "Abre la app para empezarlo.";
+"in %lld:%@" = "en %1$lld:%2$@";
+
+/* MARK: - Pantalla de bloqueo */
+
+"Daily Sudoku" = "Sudoku diario";
+"Solve streak" = "Racha";
+"Ready to play" = "Listo para jugar";
+"In progress" = "Empezado";
+"Done today" = "Hecho hoy";
+"Daily ready" = "Diario listo";
+"Daily ready · %lld" = "Diario listo · %lld";
+"Daily in progress" = "Diario empezado";
+"Daily done" = "Diario hecho";
+"Daily done · %lld" = "Diario hecho · %lld";
+
+/* MARK: - VoiceOver */
+
+"Sudoku grid, %lld of 81 cells filled" = "Tablero de sudoku, %lld de 81 casillas rellenas";

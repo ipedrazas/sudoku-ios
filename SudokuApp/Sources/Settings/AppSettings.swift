@@ -7,11 +7,12 @@ enum ThemePreference: String, CaseIterable, Sendable {
     case light
     case dark
 
+    /// Localised at the point of use; `rawValue` is the stored form.
     var name: String {
         switch self {
-        case .system: "System"
-        case .light: "Light"
-        case .dark: "Dark"
+        case .system: String(localized: "System")
+        case .light: String(localized: "Light")
+        case .dark: String(localized: "Dark")
         }
     }
 

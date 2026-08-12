@@ -128,17 +128,20 @@ struct CalendarScreen: View {
     }
 
     private func label(for cell: CalendarCell, number: Int, state: DailyState?, playable: Bool) -> String {
-        var parts = ["Day \(number)"]
+        let status: String
         if let state, state.isCompleted {
-            parts.append(state.formattedTime.map { "solved in \($0)" } ?? "solved")
+            status = state.formattedTime.map { String(localized: "solved in \($0)") } ?? String(localized: "solved")
         } else if state?.isInProgress == true {
-            parts.append("in progress")
+            status = String(localized: "in progress")
         } else if playable {
-            parts.append("not played")
+            status = String(localized: "not played")
         } else {
-            parts.append("not available yet")
+            status = String(localized: "not available yet")
         }
-        return parts.joined(separator: ", ")
+        // Assembled by a format string rather than by joining on ", ": the
+        // separator between a day and its status is punctuation, and a
+        // translation is entitled to a different one — or to a different order.
+        return String(localized: "Day \(number), \(status)")
     }
 
     private var legend: some View {
@@ -152,7 +155,7 @@ struct CalendarScreen: View {
         .accessibilityHidden(true)
     }
 
-    private func legendItem(color: Color, label: String) -> some View {
+    private func legendItem(color: Color, label: LocalizedStringKey) -> some View {
         HStack(spacing: 6) {
             RoundedRectangle(cornerRadius: 4)
                 .fill(color)

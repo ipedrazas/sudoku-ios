@@ -180,7 +180,7 @@ private struct StreakBadge: View {
             }
             .font(.caption2.weight(.semibold))
             .foregroundStyle(.tint)
-            .accessibilityLabel("\(streak) day streak")
+            .accessibilityLabel(Text("^[\(streak) day](inflect: true) streak"))
         }
     }
 }
@@ -198,7 +198,7 @@ private struct StreakLine: View {
             .font(.caption.weight(.medium))
             .foregroundStyle(.tint)
         } else if status.bestStreak > 0 {
-            Text("Best streak \(status.bestStreak) days")
+            Text("Best streak: ^[\(status.bestStreak) day](inflect: true)")
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
@@ -211,7 +211,7 @@ extension DailyEntry {
     /// What the status says, unless the app has never published anything — in
     /// which case "today's puzzle is ready" would be a claim about a store this
     /// widget has never seen.
-    var headline: String {
+    var headline: LocalizedStringKey {
         hasData ? status.headline : "Open the app to begin"
     }
 }
@@ -227,7 +227,13 @@ extension DailyStatus {
     }
 
     /// The one line the widget exists to say.
-    var headline: String {
+    ///
+    /// `LocalizedStringKey`, not `String`. `Text(someString)` takes the
+    /// `StringProtocol` overload, which is documented as displaying a stored
+    /// string *without* localization — so a `String` here would have shipped the
+    /// English through untranslated, and `detail`'s `^[…](inflect:)` markup
+    /// would have been drawn literally, brackets and all.
+    var headline: LocalizedStringKey {
         switch standing {
         case .ready: streak > 0 ? "Keep the streak going" : "Today's puzzle is ready"
         case .inProgress: "Picked up, not finished"
@@ -236,7 +242,7 @@ extension DailyStatus {
     }
 
     /// The supporting number, when there is one worth showing.
-    var detail: String? {
+    var detail: LocalizedStringKey? {
         switch standing {
         case .ready:
             nil

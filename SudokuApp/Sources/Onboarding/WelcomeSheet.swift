@@ -20,7 +20,10 @@ struct WelcomeSheet: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 28) {
                     header
-                    ForEach(Self.points, id: \.title) { point in
+                    // Keyed on the symbol, not the title: a `LocalizedStringKey`
+                    // is not `Hashable`, and identity that moves with the
+                    // language is not identity anyway.
+                    ForEach(Self.points, id: \.symbol) { point in
                         Point(point: point)
                     }
                 }
@@ -96,8 +99,11 @@ struct WelcomeSheet: View {
 
     struct Detail {
         let symbol: String
-        let title: String
-        let body: String
+        /// `LocalizedStringKey`, because these reach `Text` through a stored
+        /// property rather than as a literal at the call site — and `Text` only
+        /// localises what it is handed as a key.
+        let title: LocalizedStringKey
+        let body: LocalizedStringKey
     }
 
     private static let points = [

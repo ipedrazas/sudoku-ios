@@ -48,19 +48,31 @@ struct BoardView: View {
                 AccessibilityRotorEntry(BoardAccessibility.rotorLabel(for: cell), cell.index, in: cells)
             }
         }
+        // `String(localized:)` rather than a bare literal: an interpolated
+        // literal here resolves to `AccessibilityRotorEntry`'s `StringProtocol`
+        // initialiser, which does not localise — these three rotors were the
+        // only strings in the app the compiler's extraction did not see.
         .accessibilityRotor("Rows") {
             ForEach(0..<SudokuKit.Grid.size, id: \.self) { row in
-                AccessibilityRotorEntry("Row \(row + 1)", CellRef(row: row, col: 0).index, in: cells)
+                AccessibilityRotorEntry(String(localized: "Row \(row + 1)"), CellRef(row: row, col: 0).index, in: cells)
             }
         }
         .accessibilityRotor("Columns") {
             ForEach(0..<SudokuKit.Grid.size, id: \.self) { column in
-                AccessibilityRotorEntry("Column \(column + 1)", CellRef(row: 0, col: column).index, in: cells)
+                AccessibilityRotorEntry(
+                    String(localized: "Column \(column + 1)"),
+                    CellRef(row: 0, col: column).index,
+                    in: cells
+                )
             }
         }
         .accessibilityRotor("Boxes") {
             ForEach(0..<SudokuKit.Grid.size, id: \.self) { box in
-                AccessibilityRotorEntry("Box \(box + 1)", BoardAccessibility.firstCell(ofBox: box).index, in: cells)
+                AccessibilityRotorEntry(
+                    String(localized: "Box \(box + 1)"),
+                    BoardAccessibility.firstCell(ofBox: box).index,
+                    in: cells
+                )
             }
         }
     }

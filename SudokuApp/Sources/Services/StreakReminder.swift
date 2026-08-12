@@ -53,16 +53,20 @@ enum StreakReminderPlan {
             // scheduled now but fires after a day that may well have broken the
             // streak, so it makes no claim about it.
             let isTonight = dayOffset == 0 && streak > 0
-            let days = streak == 1 ? "1 day" : "\(streak) days"
 
             reminders.append(
                 StreakReminder(
                     dateKey: DailyPuzzle.dateKey(for: day),
                     fireDate: fireDate,
-                    title: isTonight ? "Your streak ends tonight" : "Today's puzzle is waiting",
+                    title: isTonight
+                        ? String(localized: "Your streak ends tonight")
+                        : String(localized: "Today's puzzle is waiting"),
+                    // The count and the sentence are one plural entry rather
+                    // than a number spliced into a fixed string: Spanish agrees
+                    // its verb with the count, so the two cannot be separated.
                     body: isTonight
-                        ? "\(days) so far. Today's Sudoku takes a few minutes."
-                        : "Keep your solve streak going."
+                        ? String(localized: "\(streak) days so far. Today's Sudoku takes a few minutes.")
+                        : String(localized: "Keep your solve streak going.")
                 )
             )
         }
