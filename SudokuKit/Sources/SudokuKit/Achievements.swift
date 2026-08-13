@@ -127,11 +127,15 @@ public enum Achievements {
         return earned
     }
 
-    /// Collapses the four-rung ladder onto the web app's three achievement
-    /// buckets. Expert is harder than Hard, so it satisfies anything Hard does.
+    /// Collapses the ladder onto the web app's three achievement buckets. Expert
+    /// is harder than Hard, so it satisfies anything Hard does; Gentle counts as
+    /// Easy, so the rung a beginner is steered to still earns a first solve. The
+    /// eleven keys are frozen — a "first gentle solve" badge is not available to
+    /// this mapping, and the alternative is a beginner finishing a puzzle and
+    /// being told nothing happened.
     static func achievementDifficulty(_ difficulty: Difficulty) -> Difficulty {
         switch difficulty {
-        case .easy: .easy
+        case .gentle, .easy: .easy
         case .medium: .medium
         case .hard, .expert: .hard
         }

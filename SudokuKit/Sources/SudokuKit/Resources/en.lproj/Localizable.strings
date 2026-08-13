@@ -13,6 +13,7 @@
 
 /* MARK: - Difficulty */
 
+"difficulty.gentle" = "Gentle";
 "difficulty.easy" = "Easy";
 "difficulty.medium" = "Medium";
 "difficulty.hard" = "Hard";

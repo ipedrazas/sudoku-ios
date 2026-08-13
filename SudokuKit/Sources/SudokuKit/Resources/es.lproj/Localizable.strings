@@ -13,6 +13,9 @@
 
 /* MARK: - Dificultad */
 
+/* "Suave" no se dice de un nivel; el nombre que se entiende sin pensarlo es el
+   grado por debajo de Fácil. */
+"difficulty.gentle" = "Muy fácil";
 "difficulty.easy" = "Fácil";
 "difficulty.medium" = "Medio";
 "difficulty.hard" = "Difícil";

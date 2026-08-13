@@ -377,14 +377,30 @@ struct ValueTypeTests {
     @Test("difficulty names are presentable")
     func difficultyNames() {
         Copy.$language.withValue("en") {
+            #expect(Difficulty.gentle.name == "Gentle")
             #expect(Difficulty.easy.name == "Easy")
             #expect(Difficulty.expert.name == "Expert")
         }
         Copy.$language.withValue("es") {
+            #expect(Difficulty.gentle.name == "Muy fácil")
             #expect(Difficulty.easy.name == "Fácil")
             #expect(Difficulty.expert.name == "Experto")
         }
-        #expect(Difficulty.allCases.count == 4)
+        #expect(Difficulty.allCases.count == 5)
+
+        // A rung whose name falls back to its key is a rung nobody translated.
+        // Counting cases catches an addition; this catches the reason it
+        // mattered.
+        for language in ["en", "es"] {
+            Copy.$language.withValue(language) {
+                for difficulty in Difficulty.allCases {
+                    #expect(
+                        difficulty.name != "difficulty.\(difficulty.rawValue)",
+                        "\(difficulty.rawValue) has no name in \(language)"
+                    )
+                }
+            }
+        }
     }
 
     @Test("tier names are presentable")
