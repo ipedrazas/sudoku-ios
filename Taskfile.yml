@@ -155,9 +155,9 @@ tasks:
       - swift scripts/make-sounds.swift
 
   icon:
-    desc: Regenerate the app icon from the web app's logo
+    desc: Regenerate the app icon
     cmds:
-      - ./scripts/make-icon.sh {{.WEB_REPO}}
+      - swift scripts/make-icon.swift
 
   lint:
     desc: Lint Swift sources
