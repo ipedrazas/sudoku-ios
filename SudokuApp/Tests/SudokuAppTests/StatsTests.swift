@@ -70,8 +70,8 @@ struct StatsTests {
         // Every achievement is still listed: a goal nobody can see is not a goal.
         #expect(model.achievements.count == Achievements.all.count)
         #expect(model.achievements.allSatisfy { !$0.isUnlocked })
-        // And the charts still have their axes: four rungs, seven days, twelve months.
-        #expect(model.countsByDifficulty.count == 4)
+        // And the charts still have their axes: every rung, seven days, twelve months.
+        #expect(model.countsByDifficulty.count == Difficulty.allCases.count)
         #expect(model.countsByWeekday.count == 7)
         #expect(model.countsByMonth(now: try date("2026-08-10")).count == 12)
     }
@@ -146,8 +146,8 @@ struct StatsTests {
         let repository = try repository(completions: [Solve(day: "2026-08-10", difficulty: .expert, seconds: 900)])
         let model = StatsModel(repository: repository, now: try date("2026-08-10"))
 
-        #expect(model.countsByDifficulty.map(\.difficulty) == [.easy, .medium, .hard, .expert])
-        #expect(model.countsByDifficulty.map(\.solved) == [0, 0, 0, 1])
+        #expect(model.countsByDifficulty.map(\.difficulty) == [.gentle, .easy, .medium, .hard, .expert])
+        #expect(model.countsByDifficulty.map(\.solved) == [0, 0, 0, 0, 1])
     }
 
     @Test("weekdays start on the locale's first day and every day is present")

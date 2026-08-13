@@ -295,6 +295,9 @@ struct RootView: View {
     /// than "medium" and teaches the vocabulary the hints will use.
     private func hint(for difficulty: Difficulty) -> String {
         switch difficulty {
+        // Named for what the player does, not for a technique they have not met:
+        // this is the rung someone picks because the others looked like work.
+        case .gentle: String(localized: "one digit at a time")
         case .easy: String(localized: "scanning")
         case .medium: String(localized: "locked candidates")
         case .hard: String(localized: "and a little more")

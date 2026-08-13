@@ -18,7 +18,13 @@
 /// Every rung caps `maxTier` at `.advanced`, so **no shipped puzzle ever
 /// requires guessing**. That is the differentiator worth protecting: "hard"
 /// means "needs an X-wing", not "needs luck".
+/// Gentle was added below Easy after players reported the ladder starting too
+/// high. It is added rather than folded in: every other rung keeps its spec
+/// exactly, so every daily ever generated still generates the same puzzle.
+/// Re-scaling the four existing rungs would have been the tidier menu and would
+/// have quietly rewritten history.
 public enum Difficulty: String, CaseIterable, Sendable, Codable {
+    case gentle
     case easy
     case medium
     case hard
@@ -36,6 +42,15 @@ public enum Difficulty: String, CaseIterable, Sendable, Codable {
     /// How the generator carves for this rung.
     public var spec: DifficultySpec {
         switch self {
+        // Never anything but "this cell can only be one digit". No hidden
+        // single, so a player who has not yet learned to scan a unit for a
+        // digit's only home is never asked to.
+        //
+        // The clue floor is 40 and it is doing real work: below it the carve
+        // starts needing hidden singles to stay unique, misses the band, and
+        // falls back to a tier-2 puzzle — which is Easy wearing a gentler
+        // label, the one thing this rung must not be.
+        case .gentle: DifficultySpec(minTier: .nakedSingle, maxTier: .nakedSingle, minClues: 40, attempts: 20)
         // Solvable by scanning alone — singles only, nothing to spot.
         case .easy: DifficultySpec(minTier: .nakedSingle, maxTier: .hiddenSingle, minClues: 34, attempts: 10)
         // Needs locked candidates or a naked pair at least once.

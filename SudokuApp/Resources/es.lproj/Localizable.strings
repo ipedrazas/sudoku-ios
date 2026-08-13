@@ -32,6 +32,7 @@
 "Nothing solved yet" = "Aún no has resuelto ninguno";
 
 /* La técnica que hace falta en cada nivel, al lado de su nombre. */
+"one digit at a time" = "una cifra cada vez";
 "scanning" = "mirar y tachar";
 "locked candidates" = "candidatos bloqueados";
 "and a little more" = "y algo más";
@@ -132,6 +133,8 @@
 "Just tell me" = "Dímelo y ya";
 "Erase it" = "Borrarlo";
 "Fill it in" = "Rellenarlo";
+"Show me a different hint" = "Enséñame otra pista";
+"Fill in a cell for me" = "Rellena una casilla";
 
 /* MARK: - Tarjeta final */
 

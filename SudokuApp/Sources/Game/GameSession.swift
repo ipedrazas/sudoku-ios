@@ -402,11 +402,39 @@ final class GameSession {
     /// worse off than one who jumps straight to the answer.
     @discardableResult
     func hint(at level: HintLevel, previousLevel: HintLevel? = nil) -> Hint {
-        let hint = HintEngine.hint(for: board, solution: puzzle.solution)
+        let hint = HintEngine.hint(for: board, solution: puzzle.solution, skipping: hintsShown)
         let charged = level.cost - (previousLevel?.cost ?? 0)
         hintPoints += max(0, charged)
         if level == .reveal { hintsUsed += 1 }
         return hint
+    }
+
+    /// Cells the player has already been shown a hint about, on this position.
+    ///
+    /// Cleared by the next move, like `activeHint`: once the board changes the
+    /// deductions change with it, and yesterday's rejections should not narrow
+    /// today's help.
+    private(set) var hintsShown: Set<CellRef> = []
+
+    /// A different hint about the same position.
+    ///
+    /// Free. The player asking for this has just been given a hint they could
+    /// not use, and charging twice for one piece of help is how a hint system
+    /// teaches people not to ask. The level does not escalate either — asking
+    /// for a different hint is not asking for more of the same one.
+    func differentHint(from current: Hint) -> Hint {
+        hintsShown.formUnion(current.cells)
+        return HintEngine.hint(for: board, solution: puzzle.solution, skipping: hintsShown)
+    }
+
+    /// True when there is a hint left to show that is not the one on screen.
+    ///
+    /// Used to decide whether to offer the control at all, because a button that
+    /// hands back the same words is worse than no button.
+    func hasDifferentHint(from current: Hint) -> Bool {
+        guard !isSolved else { return false }
+        if case .mistake = current.outcome { return false }
+        return true
     }
 
     /// The hint on screen, so the board can show what the words are about.
@@ -443,6 +471,24 @@ final class GameSession {
     /// exactly the hint the player most needs acted on.
     func applyHint(_ hint: Hint) {
         guard let placement = hint.placement else { return }
+        apply(placement)
+    }
+
+    /// Fills in the cell this hint can hand over, whatever level the player is
+    /// at and whichever technique the hint was explaining.
+    ///
+    /// This is the way out of a hint the player cannot follow. It costs what a
+    /// reveal costs — it *is* the answer — minus whatever the levels already
+    /// charged, so taking the escape is never cheaper than working up to it and
+    /// never charged twice.
+    func revealAnswer(_ hint: Hint, from level: HintLevel) {
+        guard let answer = hint.answer else { return }
+        hintPoints += max(0, HintLevel.reveal.cost - level.cost)
+        hintsUsed += 1
+        apply(answer)
+    }
+
+    private func apply(_ placement: (cell: CellRef, digit: Int)) {
         guard !isGiven(placement.cell) else { return }
 
         // A revealed hint fills a cell, so it feels like filling a cell. Digit 0
@@ -621,8 +667,10 @@ final class GameSession {
     private func boardDidChange() {
         version += 1
         // A hint describes one position. Once the position moves, its highlight
-        // is pointing at history.
+        // is pointing at history — and so is the list of hints the player has
+        // already turned down.
         activeHint = nil
+        hintsShown = []
         detectNewlyCompletedUnits()
 
         // Read and cleared here whatever happens, so a mutation that does not go

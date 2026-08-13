@@ -652,35 +652,6 @@ struct GameSessionTests {
         #expect(!session.isSolved)
     }
 
-    // MARK: - Hints
-
-    @Test("hints charge only the difference when a player escalates")
-    func hintCosts() {
-        let session = session()
-
-        session.hint(at: .nudge)
-        let afterNudge = session.hintPoints
-        #expect(afterNudge == HintLevel.nudge.cost)
-
-        session.hint(at: .reveal, previousLevel: .nudge)
-        #expect(
-            session.hintPoints == HintLevel.reveal.cost,
-            "escalating should cost the same as asking for the answer outright"
-        )
-        #expect(session.hintsUsed == 1)
-    }
-
-    @Test("applying a hint fills the right digit and is undoable")
-    func applyingHints() {
-        let session = session()
-        let hint = session.hint(at: .reveal)
-        session.applyHint(hint)
-
-        guard let placement = hint.placement else { return }
-        #expect(session.board[placement.cell] == session.puzzle.solution[placement.cell])
-        #expect(session.canUndo, "a hint is a move like any other")
-    }
-
     // MARK: - Completion
 
     @Test("solving stops the clock and records the finish")

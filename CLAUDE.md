@@ -59,9 +59,15 @@ cannot. Both are deterministic; re-running reproduces the same bytes.
 - `task sounds` — `scripts/make-sounds.swift` synthesises the four `.caf` files.
   Their names are a handshake with `GameEvent.soundName`, which nothing checks at
   build time — `FeedbackTests.soundAssetsExist` is what catches a typo.
-- `task icon` — `scripts/make-icon.sh` renders the web app's `logo.svg` into the
-  light, dark and tinted 1024 px variants. The strokes are dilated before the
-  system ever shrinks them; without that the mark is a smudge at 40 points.
+- `task icon` — `scripts/make-icon.swift` draws the light, dark and tinted
+  1024 px variants with CoreGraphics. It used to rasterise the web app's
+  `logo.svg` and dilate the strokes so they survived being shrunk; players
+  called the result "amateur", and dilation was most of why — it thickens a
+  line by smearing its pixels outward, so every curve arrived lumpy. The mark
+  is now a filled drawing: a 3×3 grid with a slice of cake over it, haloed in
+  the background colour so the grid stops at its edge. Check any change to it
+  at 120 px, which is where an icon actually has to work; the geometry in that
+  file was settled by looking, and the comments say what was rejected.
 
 ### The widget process
 

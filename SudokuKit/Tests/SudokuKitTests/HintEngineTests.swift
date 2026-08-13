@@ -133,6 +133,127 @@ struct HintEngineTests {
         #expect(hint.outcome == .solved)
     }
 
+    // MARK: - Asking for a different hint
+
+    /// The defect three players reported: every elimination technique leaves
+    /// `placement` nil, so the hint they could not follow was also the hint they
+    /// could not act on. `answer` is what makes every hint actionable, and this
+    /// asserts it for the outcomes that used to have nothing.
+    @Test("every hint on an unsolved board offers a cell it can fill in")
+    func everyHintCanBeActedOn() {
+        for difficulty in Difficulty.allCases {
+            for seed in UInt64(40)..<48 {
+                let puzzle = generated(difficulty, seed: seed)
+                var board = puzzle.puzzle
+                var seen: Set<CellRef> = []
+
+                // Walk the alternatives too: the dead end appeared after a
+                // couple of "show me another", not on the first hint.
+                for _ in 0..<4 {
+                    let hint = HintEngine.hint(for: board, solution: puzzle.solution, skipping: seen)
+                    guard hint.outcome != .solved else { break }
+
+                    guard let answer = hint.answer else {
+                        Issue.record("\(difficulty) seed \(seed): \(hint.outcome) offers no way forward")
+                        break
+                    }
+                    #expect(
+                        board[answer.cell] == 0 || answer.digit == puzzle.solution[answer.cell],
+                        "an offered answer must be the solution's digit"
+                    )
+                    #expect(answer.digit == puzzle.solution[answer.cell])
+
+                    seen.formUnion(hint.cells)
+                    _ = board
+                }
+            }
+        }
+    }
+
+    @Test("asking again gives a different hint")
+    func alternativesDiffer() {
+        for seed in UInt64(60)..<70 {
+            let puzzle = generated(.easy, seed: seed)
+            let first = HintEngine.hint(for: puzzle.puzzle, solution: puzzle.solution)
+            guard case .step = first.outcome else { continue }
+
+            let second = HintEngine.hint(
+                for: puzzle.puzzle,
+                solution: puzzle.solution,
+                skipping: Set(first.cells)
+            )
+            #expect(second != first, "seed \(seed): the second ask repeated the first hint")
+            #expect(
+                !second.cells.contains(where: Set(first.cells).contains),
+                "seed \(seed): the alternative points at a cell already shown"
+            )
+        }
+    }
+
+    /// The alternatives are singles because a player who could not follow an
+    /// X-wing is not helped by a second X-wing. Every one of them also has to be
+    /// *true of the board in front of them* — which is why they are computed
+    /// from a candidate snapshot rather than from the solver, whose later steps
+    /// are only valid once its earlier ones have been applied.
+    @Test("every offered alternative is a valid deduction on the player's board")
+    func alternativesAreValid() {
+        for difficulty in Difficulty.allCases {
+            for seed in UInt64(80)..<88 {
+                let puzzle = generated(difficulty, seed: seed)
+                let board = puzzle.puzzle
+
+                for step in HintEngine.followableSingles(in: board) {
+                    guard let placed = step.placedCell else {
+                        Issue.record("a followable single must place a digit")
+                        continue
+                    }
+                    #expect(board[placed.cell] == 0, "\(placed.cell) is not empty")
+                    #expect(
+                        placed.digit == puzzle.solution[placed.cell],
+                        """
+                        \(difficulty) seed \(seed): \(placed.cell) claimed \(placed.digit), \
+                        solution says \(puzzle.solution[placed.cell])
+                        """
+                    )
+                }
+            }
+        }
+    }
+
+    @Test("running out of explanations still hands over a cell")
+    func exhaustedHintsStillOfferSomething() {
+        let puzzle = generated(.medium, seed: 5)
+        let board = puzzle.puzzle
+        // Everything is off the table, which is where repeated asking ends up.
+        let seen = Set(board.emptyCells)
+
+        let hint = HintEngine.hint(for: board, solution: puzzle.solution, skipping: seen)
+        guard case .allShown(let cell, let digit) = hint.outcome else {
+            Issue.record("expected allShown, got \(hint.outcome)")
+            return
+        }
+        #expect(digit == puzzle.solution[cell])
+        #expect(hint.placement?.cell == cell)
+        for level in HintLevel.allCases {
+            #expect(!hint.text(at: level).isEmpty)
+        }
+    }
+
+    /// `skipping` defaults to empty and that path must stay bit-for-bit what it
+    /// was: the rater's order is the definition of difficulty, and the first
+    /// hint a player gets is the rater's answer.
+    @Test("the default hint is unchanged by the alternatives path")
+    func defaultHintIsUntouched() {
+        for difficulty in Difficulty.allCases {
+            for seed in UInt64(90)..<96 {
+                let puzzle = generated(difficulty, seed: seed)
+                let hint = HintEngine.hint(for: puzzle.puzzle, solution: puzzle.solution)
+                guard case .step(let step) = hint.outcome else { continue }
+                #expect(step == Rater.nextStep(for: puzzle.puzzle))
+            }
+        }
+    }
+
     // MARK: - Copy
 
     @Test("every level produces non-empty text for every outcome")

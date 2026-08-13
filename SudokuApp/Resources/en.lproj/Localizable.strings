@@ -134,6 +134,8 @@
 "Just tell me" = "Just tell me";
 "Erase it" = "Erase it";
 "Fill it in" = "Fill it in";
+"Show me a different hint" = "Show me a different hint";
+"Fill in a cell for me" = "Fill in a cell for me";
 
 /* MARK: - Win card */
 

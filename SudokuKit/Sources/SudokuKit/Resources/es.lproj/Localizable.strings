@@ -13,6 +13,9 @@
 
 /* MARK: - Dificultad */
 
+/* "Suave" no se dice de un nivel; el nombre que se entiende sin pensarlo es el
+   grado por debajo de Fácil. */
+"difficulty.gentle" = "Muy fácil";
 "difficulty.easy" = "Fácil";
 "difficulty.medium" = "Medio";
 "difficulty.hard" = "Difícil";
@@ -58,6 +61,11 @@
 "hint.solved" = "Resuelto: no queda nada por encontrar.";
 "hint.stuck.teaching" = "Este necesita una técnica que va más allá de mirar y de los patrones sencillos.";
 "hint.stuck.none" = "No hay ninguna pista disponible.";
+
+/* Se muestra cuando se pide otra pista y ya se ha explicado todo lo que se
+   puede en esta posición. Ofrece una casilla en vez de pararse, porque "no
+   tengo nada más" es donde se abandona la partida. */
+"hint.allShown.offer" = "Ya te he explicado todo lo que puedo aquí. ¿Quieres que rellene %@?";
 
 /* La respuesta, cuando ya se pide sin rodeos. La comparten todas las técnicas
    que colocan una cifra, porque solo hay una manera de decirlo. */

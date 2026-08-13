@@ -13,6 +13,7 @@
 
 /* MARK: - Difficulty */
 
+"difficulty.gentle" = "Gentle";
 "difficulty.easy" = "Easy";
 "difficulty.medium" = "Medium";
 "difficulty.hard" = "Hard";
@@ -58,6 +59,11 @@
 "hint.solved" = "Solved — nothing left to find.";
 "hint.stuck.teaching" = "This one needs a technique beyond scanning and simple patterns.";
 "hint.stuck.none" = "No hint available.";
+
+/* Shown when the player keeps asking for a different hint and the engine has
+   explained everything it can on this position. It offers a cell rather than
+   stopping, because "I have nothing else" is where players give up. */
+"hint.allShown.offer" = "That's every deduction I can explain here. Want me to fill in %@ instead?";
 
 /* The answer, once the player has asked for it outright. Shared by every
    technique that places a digit, because there is only one way to say it. */
