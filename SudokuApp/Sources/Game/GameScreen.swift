@@ -23,12 +23,15 @@ struct GameScreen: View {
     private let clock = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
     var body: some View {
-        Group {
-            if sizeClass == .regular {
-                regularLayout
-            } else {
-                compactLayout
+        GeometryReader { proxy in
+            Group {
+                if wantsSideBySide(in: proxy.size) {
+                    regularLayout
+                } else {
+                    compactLayout(in: proxy.size)
+                }
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .padding(.horizontal, 12)
         .padding(.top, 4)
@@ -85,27 +88,89 @@ struct GameScreen: View {
 
     // MARK: - Layouts
 
-    /// iPhone portrait, and iPad in Slide Over or a narrow split.
+    /// Whether to put the controls beside the board rather than under it.
     ///
-    /// Board at the top, controls at the bottom (§8.1). Centring the board
-    /// instead only moved the dead band above it rather than removing it, and
-    /// cost the eye its anchor.
-    private var compactLayout: some View {
+    /// Size class alone was the wrong question, and an iPad in portrait was the
+    /// wrong answer to it. A 13-inch portrait screen is regular-width, so it got
+    /// the side-by-side layout: the board capped at 640 points against a column
+    /// of controls, and the remaining half of a very tall screen left empty
+    /// above and below. Players asked for the numbers under the grid, which is
+    /// the same request as "use the height" — stacked, the board grows by around
+    /// half again on that screen.
+    ///
+    /// Landscape genuinely does want the split: stacking there would give the
+    /// board only what is left of the height after a control bar and a pad,
+    /// which is smaller than what it gets beside them.
+    private func wantsSideBySide(in size: CGSize) -> Bool {
+        guard sizeClass == .regular else { return false }
+        // Not `>` — a 1:1 split view is as good as landscape for this, and the
+        // margin keeps a near-square window from flipping layout as it is
+        // dragged through the boundary.
+        return size.width > size.height * 1.1
+    }
+
+    /// iPhone, and any tall screen: board on top, controls under it (§8.1).
+    ///
+    /// Centring the board instead only moved the dead band above it rather than
+    /// removing it, and cost the eye its anchor.
+    ///
+    /// The board is capped at whatever the pad below it needs, which is what
+    /// stops a 13-inch iPad from drawing a board so large the digits have to be
+    /// looked *up* at. The cap is generous — the point of the change was more
+    /// board, not a phone layout centred in a lot of grey.
+    private func compactLayout(in size: CGSize) -> some View {
         VStack(spacing: 12) {
             header
             BoardView(session: session)
+                .frame(maxWidth: boardWidth(in: size))
+
+            // On a phone the gap is unbounded on purpose: the controls belong in
+            // the bottom third, where a thumb reaches. On a tablet nothing
+            // reaches the bottom of a 1366-point screen, and an unbounded gap
+            // there would strand the pad a screen away from the board it acts on
+            // — which is the failure the side-by-side layout was built to avoid,
+            // reintroduced by stacking. Bounded, the whole stack centres instead.
             Spacer(minLength: 0)
+                .frame(maxHeight: sizeClass == .regular ? 56 : .infinity)
+
             ControlBar(session: session, onHint: requestHint)
             NumberPad(session: session, layout: .row)
         }
+        .frame(maxHeight: .infinity, alignment: sizeClass == .regular ? .center : .top)
+        // Controls on a tablet do not want to be as wide as the tablet: a number
+        // pad stretched across a 1024-point screen puts 1 and 9 a hand's width
+        // apart.
+        .frame(maxWidth: sizeClass == .regular ? Self.tabletContentWidth : .infinity)
+        .frame(maxWidth: .infinity)
     }
 
-    /// iPad, and iPhone Max in landscape (§8.2).
+    /// How wide the board and the controls under it are allowed to get.
     ///
-    /// Stretching the compact layout to an iPad gives a board the size of a
-    /// dinner plate with the controls marooned at the bottom edge — a reach of
-    /// most of the screen between looking and tapping. Side by side keeps the
-    /// board at a readable size and the controls next to it.
+    /// 780 rather than the 640 the side-by-side layout capped the board at, and
+    /// rather than the full width. It is set from the *number pad*: nine keys
+    /// across this give about 82 points each, which is a comfortable target,
+    /// where the full 1000 points of an iPad's width gives 105 and a row that
+    /// has to be traversed rather than aimed at.
+    private static let tabletContentWidth: CGFloat = 780
+
+    /// The board's ceiling in the stacked layout: whichever of the width and the
+    /// leftover height binds first, so the grid grows into the space an iPad has
+    /// and never past what the controls need.
+    private func boardWidth(in size: CGSize) -> CGFloat {
+        guard sizeClass == .regular else { return .infinity }
+        // Header, control bar, number pad and the spacings between them, at the
+        // default text size. Only binds on a short regular-width window; a full
+        // iPad portrait screen has height to spare.
+        let controlsHeight: CGFloat = 260
+        return min(Self.tabletContentWidth, max(320, size.height - controlsHeight))
+    }
+
+    /// iPad in landscape, and iPhone Max in landscape (§8.2).
+    ///
+    /// Stacking in landscape gives a board the size of a dinner plate with the
+    /// controls marooned at the bottom edge — a reach of most of the screen
+    /// between looking and tapping. Side by side keeps the board at a readable
+    /// size and the controls next to it.
     private var regularLayout: some View {
         HStack(alignment: .center, spacing: 32) {
             BoardView(session: session)
