@@ -132,6 +132,8 @@
 "Just tell me" = "Dímelo y ya";
 "Erase it" = "Borrarlo";
 "Fill it in" = "Rellenarlo";
+"Show me a different hint" = "Enséñame otra pista";
+"Fill in a cell for me" = "Rellena una casilla";
 
 /* MARK: - Tarjeta final */
 

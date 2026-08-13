@@ -11,6 +11,7 @@ struct GameScreen: View {
     var onNewGame: () -> Void
 
     @State private var hint: Hint?
+    @State private var showsHint = false
     @State private var hintLevel: HintLevel = .nudge
     @State private var sharedImage: Image?
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -39,8 +40,26 @@ struct GameScreen: View {
         .navigationTitle(session.difficulty.name)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar { toolbarContent }
-        .sheet(item: $hint) { hint in
-            HintSheet(hint: hint, level: $hintLevel, session: session, onDismiss: dismissHint)
+        // Presented by a flag rather than by `sheet(item:)`. Swapping to a
+        // different hint replaces the value, and an item-bound sheet reads a new
+        // identity as a new sheet: the old one animates out and the new one in,
+        // which is a lot of movement for "same question, different answer".
+        .sheet(isPresented: $showsHint) {
+            if let hint {
+                HintSheet(
+                    hint: hint,
+                    level: $hintLevel,
+                    session: session,
+                    onDifferent: showDifferentHint,
+                    onDismiss: dismissHint
+                )
+            }
+        }
+        // Swiping the sheet away is *Done*, not a third state. Without this the
+        // flag drops but the hint does not, and the board stays lit for a sheet
+        // that is no longer on screen.
+        .onChange(of: showsHint) { _, isShowing in
+            if !isShowing { dismissHint() }
         }
         .sheet(isPresented: Binding(get: { sharedImage != nil }, set: { if !$0 { sharedImage = nil } })) {
             if let sharedImage {
@@ -192,6 +211,19 @@ struct GameScreen: View {
         // it and points is a hint.
         session.show(hint)
         self.hint = hint
+        showsHint = true
+    }
+
+    /// A different hint, at the level the player is already reading at.
+    ///
+    /// Not a reset to `.nudge`: someone who has read down to "explain" and still
+    /// does not follow it is asking for another explanation, not to start the
+    /// escalation over.
+    private func showDifferentHint() {
+        guard let current = hint else { return }
+        let next = session.differentHint(from: current)
+        session.show(next)
+        hint = next
     }
 
     private func boardImage() -> Image? {
@@ -199,6 +231,7 @@ struct GameScreen: View {
     }
 
     private func dismissHint() {
+        showsHint = false
         hint = nil
         session.dismissHint()
     }
@@ -217,41 +250,73 @@ struct GameScreen: View {
 
 /// Escalating hints: name the technique, point at it, explain it, then — only if
 /// asked — give the answer.
+///
+/// **Every state of this sheet has a way forward.** It used not to. The
+/// escalation ran nudge → locate → explain → reveal, and at reveal the sheet
+/// offered a button only when `hint.placement` was set — which every elimination
+/// technique leaves nil, because "rule 4 out of these two cells" fills nothing
+/// in. A player who did not follow an X-wing arrived at the last level of the
+/// last hint and found one control: *Done*. Three of them wrote in to say so.
+///
+/// Two controls answer that, and both are present at every level rather than
+/// only at the end:
+///
+/// - **Show me a different hint** — the engine has more than one deduction
+///   available and used to only ever offer the first. Asking again is free.
+/// - **Fill in a cell for me** — costs what a reveal costs, and always works,
+///   because `Hint.answer` is populated for every outcome on an unsolved board.
 private struct HintSheet: View {
     let hint: Hint
     @Binding var level: HintLevel
     @Bindable var session: GameSession
+    var onDifferent: () -> Void
     var onDismiss: () -> Void
+
+    private static let detent = PresentationDetent.height(320)
 
     var body: some View {
         NavigationStack {
-            VStack(alignment: .leading, spacing: 20) {
-                Text(hint.text(at: level))
-                    .font(.body)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .accessibilityIdentifier("hint.text")
+            VStack(alignment: .leading, spacing: 16) {
+                // Scrolls so that large Dynamic Type lengthens the text rather
+                // than pushing the controls off the bottom of the detent — the
+                // P9-3 failure, in a sheet that cannot afford it: the controls
+                // being unreachable is the whole defect this sheet exists to fix.
+                ScrollView {
+                    Text(hint.text(at: level))
+                        .font(.body)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .accessibilityIdentifier("hint.text")
+                }
+                .scrollBounceBehavior(.basedOnSize)
 
-                Spacer()
+                VStack(spacing: 8) {
+                    primaryButton
 
-                if level != .reveal {
-                    Button {
-                        escalate()
-                    } label: {
-                        Label(nextLabel, systemImage: "arrow.right.circle")
-                            .frame(maxWidth: .infinity)
+                    HStack(spacing: 8) {
+                        if session.hasDifferentHint(from: hint) {
+                            Button(action: onDifferent) {
+                                Label("Show me a different hint", systemImage: "arrow.triangle.2.circlepath")
+                                    .frame(maxWidth: .infinity)
+                                    .lineLimit(2)
+                            }
+                            .buttonStyle(.bordered)
+                            .accessibilityIdentifier("hint.different")
+                        }
+
+                        if showsAnswerEscape {
+                            Button {
+                                session.revealAnswer(hint, from: level)
+                                onDismiss()
+                            } label: {
+                                Label("Fill in a cell for me", systemImage: "wand.and.stars")
+                                    .frame(maxWidth: .infinity)
+                                    .lineLimit(2)
+                            }
+                            .buttonStyle(.bordered)
+                            .accessibilityIdentifier("hint.answer")
+                        }
                     }
-                    .buttonStyle(.borderedProminent)
-                    .accessibilityIdentifier("hint.more")
-                } else if hint.placement != nil {
-                    Button {
-                        session.applyHint(hint)
-                        onDismiss()
-                    } label: {
-                        Label(applyLabel, systemImage: applySymbol)
-                            .frame(maxWidth: .infinity)
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .accessibilityIdentifier("hint.apply")
+                    .font(.subheadline)
                 }
             }
             .padding()
@@ -265,9 +330,40 @@ private struct HintSheet: View {
         }
         // Short enough that the board — and the cells the hint just lit up —
         // stay on screen behind it. A hint that hides what it is pointing at is
-        // a worse hint.
-        .presentationDetents([.height(240)])
-        .presentationBackgroundInteraction(.enabled(upThrough: .height(240)))
+        // a worse hint. `.large` is offered as well so a long explanation at an
+        // accessibility text size can be read without scrolling a small box.
+        .presentationDetents([Self.detent, .large])
+        .presentationBackgroundInteraction(.enabled(upThrough: Self.detent))
+    }
+
+    @ViewBuilder
+    private var primaryButton: some View {
+        if level != .reveal {
+            Button(action: escalate) {
+                Label(nextLabel, systemImage: "arrow.right.circle")
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.borderedProminent)
+            .accessibilityIdentifier("hint.more")
+        } else if hint.placement != nil {
+            Button {
+                session.applyHint(hint)
+                onDismiss()
+            } label: {
+                Label(applyLabel, systemImage: applySymbol)
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.borderedProminent)
+            .accessibilityIdentifier("hint.apply")
+        }
+    }
+
+    /// Offered whenever the primary button is not already the answer: at reveal
+    /// with a placement, "Fill it in" *is* this control, and two buttons that do
+    /// the same thing read as two different things.
+    private var showsAnswerEscape: Bool {
+        guard hint.answer != nil else { return false }
+        return !(level == .reveal && hint.placement != nil)
     }
 
     private var nextLabel: LocalizedStringKey {
@@ -295,10 +391,6 @@ private struct HintSheet: View {
         level = next
         session.hint(at: next, previousLevel: previous)
     }
-}
-
-extension Hint: @retroactive Identifiable {
-    public var id: String { "\(outcome)" }
 }
 
 // MARK: - Share as image
