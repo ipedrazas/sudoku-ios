@@ -13,6 +13,25 @@ struct BoardView: View {
     /// Ties the rotor entries below to the cells they point at.
     @Namespace private var cells
 
+    /// The side of one cell, measured rather than assumed.
+    ///
+    /// The type sizes below are fractions of this instead of the fixed 22 and 9
+    /// points they used to be. A fixed size is only ever right for one board
+    /// size, and the board is now as wide as the screen allows: the same 22
+    /// points that filled 63% of a 35-point cell fills less than half of a
+    /// 46-point one, so growing the grid without this makes the digits look
+    /// smaller even though nothing about them changed.
+    ///
+    /// The starting value is what a 6.1" phone lands on, so the first frame is
+    /// close before it is exact.
+    @State private var cellSide: CGFloat = 36
+
+    /// Fractions of the cell, chosen to preserve the proportions the board was
+    /// designed at rather than to be round numbers: 22/35 for a digit, and 9
+    /// points inside a 3×3 sub-grid of a 35-point cell for a note.
+    private static let digitScale: CGFloat = 0.62
+    private static let noteScale: CGFloat = 0.26
+
     var body: some View {
         VStack(spacing: 0) {
             ForEach(0..<SudokuKit.Grid.size, id: \.self) { row in
@@ -24,6 +43,16 @@ struct BoardView: View {
             }
         }
         .aspectRatio(1, contentMode: .fit)
+        // Measured here, after `aspectRatio`, which is the point at which the
+        // view's size is the square the board actually occupies. Reading it in a
+        // `GeometryReader` instead would mean wrapping the grid in a view that
+        // accepts any proposal, which is the one thing the aspect ratio is here
+        // to prevent.
+        .onGeometryChange(for: CGFloat.self) { proxy in
+            proxy.size.width / CGFloat(SudokuKit.Grid.size)
+        } action: { side in
+            cellSide = side
+        }
         .overlay(boxLines)
         .background(Color(.systemBackground))
         .clipShape(RoundedRectangle(cornerRadius: 10))
@@ -97,11 +126,21 @@ struct BoardView: View {
             state.background
             if value != 0 {
                 Text(String(value))
-                    .font(.system(size: 22, weight: state.isGiven ? .semibold : .regular, design: .rounded))
+                    .font(
+                        .system(
+                            size: cellSide * Self.digitScale,
+                            weight: state.isGiven ? .semibold : .regular,
+                            design: .rounded
+                        )
+                    )
                     .minimumScaleFactor(0.5)
                     .foregroundStyle(state.foreground)
             } else if session.notes(at: cell) != 0 {
-                NotesView(mask: session.notes(at: cell), highlighted: session.highlightedDigit)
+                NotesView(
+                    mask: session.notes(at: cell),
+                    highlighted: session.highlightedDigit,
+                    size: cellSide * Self.noteScale
+                )
             }
         }
         .frame(maxWidth: .infinity)
@@ -279,6 +318,9 @@ private struct CellState {
 private struct NotesView: View {
     let mask: UInt16
     let highlighted: Int?
+    /// Point size for one note, passed in because it is a fraction of the cell
+    /// and the cell is a fraction of the screen.
+    let size: CGFloat
 
     var body: some View {
         VStack(spacing: 0) {
@@ -287,7 +329,7 @@ private struct NotesView: View {
                     ForEach(0..<3, id: \.self) { column in
                         let digit = row * 3 + column + 1
                         Text(mask & Candidates.bit(digit) != 0 ? String(digit) : " ")
-                            .font(.system(size: 9, weight: highlighted == digit ? .bold : .regular))
+                            .font(.system(size: size, weight: highlighted == digit ? .bold : .regular))
                             .foregroundStyle(highlighted == digit ? Color.accentColor : .secondary)
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
                     }
