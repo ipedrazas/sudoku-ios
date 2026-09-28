@@ -123,6 +123,17 @@ struct GameScreen: View {
             header
             BoardView(session: session)
                 .frame(maxWidth: boardWidth(in: size))
+                // Load-bearing. The board is `aspectRatio(1, .fit)`, so its side
+                // is whichever of the width and the height offered to it is
+                // smaller — and the `Spacer` below is exactly as flexible as it
+                // is, so a VStack split the leftover height roughly in half
+                // between them. On a 6.9" phone that meant a board of about 350
+                // points inside 416 points of available width, with the ~70
+                // points it gave up sitting as an empty band directly beneath
+                // it. The priority makes the stack settle the board first, at
+                // full width, and hand the spacer what is left rather than the
+                // other way round.
+                .layoutPriority(1)
 
             // On a phone the gap is unbounded on purpose: the controls belong in
             // the bottom third, where a thumb reaches. On a tablet nothing
