@@ -31,7 +31,7 @@ rather than fill in.
 > connection required. Ever.
 >
 > Every puzzle is generated on your device and guaranteed to be solvable by
-> logic alone — never by guessing. The four difficulties are defined by the
+> logic alone — never by guessing. The five difficulties are defined by the
 > technique each one needs rather than by how many digits are missing, so
 > "hard" means the same thing today as it did last week.
 >
@@ -101,14 +101,18 @@ claim, including the one required-reason API (`UserDefaults`, CA92.1).
 
 ## Review notes
 
-> No account is needed and there is nothing to log in to. The app works with
-> airplane mode on — please feel free to test it that way.
->
-> The daily puzzle is generated from the date on the device, not fetched, so it
-> works offline and is the same for every user on a given day.
->
-> The widget shows the state of today's puzzle. It reads a small file the app
-> writes into the shared App Group container and never accesses anything else.
+**See `plans/app-review-notes.md`** — that file is what goes in the App Review
+Information → Notes field, and it is the reply to the Guideline 2.1 rejection of
+the first submission.
+
+The three paragraphs that used to be here were true and were not enough. Review
+came back asking for seven separate things: a screen recording from a physical
+device, the devices tested on, what the app does and for whom, how to reach each
+feature, which external services it uses, whether behaviour varies by region,
+and whether any of it is regulated or licensed. An app with no account, no
+network and no purchases gives a reviewer nothing to confirm, so the burden of
+saying *what it is* falls entirely on this field. Answer all seven, in their
+order, every time.
 
 ## Screenshots
 
