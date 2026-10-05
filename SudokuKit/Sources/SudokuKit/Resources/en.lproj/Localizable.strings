@@ -74,6 +74,7 @@
 "hint.nakedSingle.nudge" = "There's a cell with only one possible digit.";
 "hint.nakedSingle.locate" = "Look at %@ — only one digit fits.";
 "hint.nakedSingle.explain" = "Every digit but one already appears in %@'s row, column or box, so that one is left.";
+"hint.nakedSingle.explainNotes" = "Your notes have ruled out every digit but one in %@, so that one is left.";
 
 /* MARK: - Hints: hidden single */
 

@@ -180,16 +180,32 @@ struct GameSessionTests {
         #expect(Candidates.digits(session.notes(at: cell)) == [4])
     }
 
-    @Test("auto-fill marks every legal candidate")
+    @Test("auto-fill marks the candidates the engine's logic leaves")
     func autoFillNotes() {
         let session = session()
         session.autoFillNotes()
 
-        let expected = CandidateGrid(session.board)
+        let expected = AutoNotes.fill(board: session.board, notes: [], solution: session.puzzle.solution)
         for index in 0..<SudokuKit.Grid.cellCount {
             let cell = CellRef(index: index)
-            #expect(session.notes(at: cell) == (session.board[index] == 0 ? expected[index] : 0))
+            #expect(session.notes(at: cell) == expected[index])
+            if session.board[index] == 0 {
+                #expect(session.notes(at: cell) & Candidates.bit(session.puzzle.solution[index]) != 0)
+            }
         }
+    }
+
+    @Test("auto-fill does not put back a digit the player crossed out")
+    func autoFillKeepsEliminations() {
+        let session = session()
+        let cell = firstEmptyCell(session)
+        let answer = session.puzzle.solution[cell]
+
+        session.select(cell)
+        session.inputNote(answer)
+        session.autoFillNotes()
+
+        #expect(Candidates.digits(session.notes(at: cell)) == [answer])
     }
 
     // MARK: - History

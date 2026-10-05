@@ -74,25 +74,34 @@ public struct Hint: Equatable, Sendable {
     /// solution digit for a cell involved in this hint, or for the most
     /// constrained empty cell when the hint involves none.
     public let answer: (cell: CellRef, digit: Int)?
+    /// True when a naked single is only single because of the player's notes.
+    ///
+    /// The usual explanation — every other digit is already in the row, column
+    /// or box — would then be false, and a hint that says something the player
+    /// can see is untrue is worse than no hint.
+    public let reliesOnNotes: Bool
 
     public init(
         outcome: HintOutcome,
         cells: [CellRef],
         units: [UnitRef],
         placement: (cell: CellRef, digit: Int)?,
-        answer: (cell: CellRef, digit: Int)? = nil
+        answer: (cell: CellRef, digit: Int)? = nil,
+        reliesOnNotes: Bool = false
     ) {
         self.outcome = outcome
         self.cells = cells
         self.units = units
         self.placement = placement
         self.answer = answer
+        self.reliesOnNotes = reliesOnNotes
     }
 
     public static func == (lhs: Hint, rhs: Hint) -> Bool {
         lhs.outcome == rhs.outcome && lhs.cells == rhs.cells && lhs.units == rhs.units
             && lhs.placement?.cell == rhs.placement?.cell && lhs.placement?.digit == rhs.placement?.digit
             && lhs.answer?.cell == rhs.answer?.cell && lhs.answer?.digit == rhs.answer?.digit
+            && lhs.reliesOnNotes == rhs.reliesOnNotes
     }
 }
 
@@ -114,9 +123,15 @@ public enum HintEngine {
     ///   engine's best hint and behaves exactly as it always has; non-empty asks
     ///   for a *different* one, which is what the "Show me another" control
     ///   sends.
+    /// - Parameter notes: the player's pencil marks, one mask per cell. A
+    ///   deduction they already show is something the player knows, and
+    ///   telling them it again is noise — "4 is locked to this column" to
+    ///   someone who crossed the 4s out a minute ago. Empty, or omitted, reasons
+    ///   from the board alone.
     public static func hint(
         for board: borrowing Grid,
         solution: borrowing Grid,
+        notes: [UInt16] = [],
         skipping seen: Set<CellRef> = []
     ) -> Hint {
         if let mistake = firstMistake(in: board, against: solution) {
@@ -137,7 +152,9 @@ public enum HintEngine {
             return Hint(outcome: .solved, cells: [], units: [], placement: nil)
         }
 
-        guard let step = step(for: board, skipping: seen) else {
+        let known = CandidateGrid(board, notes: notes, solution: solution)
+
+        guard let step = step(for: board, knowing: known, skipping: seen) else {
             // Either no technique applies at all, or every one that does has
             // already been shown. Both end the same way: hand over a cell rather
             // than leave the player with nothing.
@@ -154,12 +171,18 @@ public enum HintEngine {
             )
         }
 
+        var reliesOnNotes = false
+        if case .nakedSingle(let cell, _) = step {
+            reliesOnNotes = Candidates.count(CandidateGrid(board)[cell]) > 1
+        }
+
         return Hint(
             outcome: .step(step),
             cells: highlightCells(for: step),
             units: highlightUnits(for: step),
             placement: step.placedCell,
-            answer: answer(for: step, in: board, solution: solution)
+            answer: answer(for: step, in: board, solution: solution),
+            reliesOnNotes: reliesOnNotes
         )
     }
 
@@ -171,13 +194,17 @@ public enum HintEngine {
     /// engine look wider, and then it looks *down* first: the alternatives it
     /// offers are singles, because a player who could not follow an X-wing is
     /// not helped by a second X-wing.
-    static func step(for board: borrowing Grid, skipping seen: Set<CellRef>) -> TechniqueStep? {
-        guard !seen.isEmpty else { return Rater.nextStep(for: board) }
+    static func step(
+        for board: borrowing Grid,
+        knowing known: CandidateGrid? = nil,
+        skipping seen: Set<CellRef>
+    ) -> TechniqueStep? {
+        guard !seen.isEmpty else { return Rater.nextStep(for: board, knowing: known) }
 
-        if let alternative = followableSingles(in: board).first(where: { !isSeen($0, in: seen) }) {
+        if let alternative = followableSingles(in: board, knowing: known).first(where: { !isSeen($0, in: seen) }) {
             return alternative
         }
-        if let step = Rater.nextStep(for: board), !isSeen(step, in: seen) {
+        if let step = Rater.nextStep(for: board, knowing: known), !isSeen(step, in: seen) {
             return step
         }
         return nil
@@ -198,8 +225,8 @@ public enum HintEngine {
     ///
     /// Singles only, because these are the two techniques that can be acted on
     /// without understanding them: "this cell can only be a 4" needs no theory.
-    static func followableSingles(in board: borrowing Grid) -> [TechniqueStep] {
-        let candidates = CandidateGrid(board)
+    static func followableSingles(in board: borrowing Grid, knowing known: CandidateGrid? = nil) -> [TechniqueStep] {
+        let candidates = known ?? CandidateGrid(board)
         var steps: [TechniqueStep] = []
         var claimed = Set<Int>()
 
@@ -378,11 +405,11 @@ extension Hint {
             }
 
         case .step(let step):
-            return Self.text(for: step, at: level)
+            return Self.text(for: step, at: level, reliesOnNotes: reliesOnNotes)
         }
     }
 
-    private static func text(for step: TechniqueStep, at level: HintLevel) -> String {
+    private static func text(for step: TechniqueStep, at level: HintLevel, reliesOnNotes: Bool) -> String {
         switch step {
         case .nakedSingle(let cell, let digit):
             switch level {
@@ -392,7 +419,8 @@ extension Hint {
                 // A cell is not a digit. The earlier wording read "R4C2 is the
                 // only digit not already in its row, column or box", which is a
                 // category error and, worse, describes a different technique.
-                return Copy.text("hint.nakedSingle.explain", cell.description)
+                let key = reliesOnNotes ? "hint.nakedSingle.explainNotes" : "hint.nakedSingle.explain"
+                return Copy.text(key, cell.description)
             case .reveal: return Copy.text("hint.reveal.placement", cell.description, digit)
             }
 

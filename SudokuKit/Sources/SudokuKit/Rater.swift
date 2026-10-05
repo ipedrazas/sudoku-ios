@@ -83,7 +83,13 @@ public enum Rater {
     /// Same loop as `rate`, but stops at the first step and reports it. This is
     /// what the hint engine drives, and it runs against the *player's* board
     /// rather than the original puzzle.
-    public static func nextStep(for board: borrowing Grid) -> TechniqueStep? {
+    ///
+    /// - Parameter known: what the player has already worked out, as candidate
+    ///   masks. The loop order is untouched; the solver just starts from
+    ///   narrower candidates, so a deduction the player's notes already show
+    ///   makes no progress and the next one is reported instead. Nil starts
+    ///   from the board alone, exactly as before.
+    public static func nextStep(for board: borrowing Grid, knowing known: CandidateGrid? = nil) -> TechniqueStep? {
         withUnsafeTemporaryAllocation(of: UInt8.self, capacity: Grid.cellCount) { cells in
             board.withUnsafeCells { source in
                 _ = cells.initialize(fromContentsOf: source)
@@ -95,6 +101,7 @@ public enum Rater {
                 defer { candidates.deinitialize() }
 
                 var solver = TechniqueSolver(cells: cells, candidates: candidates, recordsSteps: true)
+                if let known { solver.restrict(to: known) }
                 guard solver.emptyCount > 0, !solver.isStuck else { return nil }
 
                 if solver.nakedSingles() { return solver.lastStep }
@@ -105,6 +112,41 @@ public enum Rater {
                 if solver.nakedSubsets(3) { return solver.lastStep }
                 if solver.xWing() { return solver.lastStep }
                 return nil
+            }
+        }
+    }
+
+    /// The candidates left once every elimination the engine knows has been
+    /// applied, without placing anything.
+    ///
+    /// The logic half of "fill in all notes". Eliminations only: a naked or
+    /// hidden single is the player's to place, so a cell that comes down to
+    /// one candidate is left showing that one rather than being filled in.
+    /// Cheapest technique first, restarting from the top after any progress,
+    /// for the same reason `rate` does — and it terminates, because every pass
+    /// that reports progress has removed at least one candidate.
+    static func eliminations(for board: borrowing Grid, knowing known: CandidateGrid) -> CandidateGrid {
+        withUnsafeTemporaryAllocation(of: UInt8.self, capacity: Grid.cellCount) { cells in
+            board.withUnsafeCells { source in
+                _ = cells.initialize(fromContentsOf: source)
+            }
+            defer { cells.deinitialize() }
+
+            return withUnsafeTemporaryAllocation(of: UInt16.self, capacity: Grid.cellCount) { candidates in
+                candidates.initialize(repeating: 0)
+                defer { candidates.deinitialize() }
+
+                var solver = TechniqueSolver(cells: cells, candidates: candidates)
+                solver.restrict(to: known)
+
+                while !solver.isStuck {
+                    let progress =
+                        solver.lockedCandidates() || solver.nakedSubsets(2) || solver.hiddenSubsets(2)
+                        || solver.nakedSubsets(3) || solver.xWing()
+                    guard progress else { break }
+                }
+
+                return CandidateGrid(masks: (0..<Grid.cellCount).map(solver.candidateMask(at:)))
             }
         }
     }
