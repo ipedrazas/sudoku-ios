@@ -38,9 +38,6 @@ struct RootView: View {
     /// board — the whole point of preparing them is not paying for it again.
     @State private var feedback = Feedback()
     @State private var showsWelcome = false
-    /// The source for the zoom into a game. A namespace rather than a boolean
-    /// because the transition is matched: the row grows into the board.
-    @Namespace private var transition
 
     var body: some View {
         NavigationStack(path: $path) {
@@ -97,13 +94,17 @@ struct RootView: View {
         case .settings:
             SettingsScreen(settings: settings, stats: stats, onEraseAll: eraseAll)
         case .game:
+            // A plain push, deliberately. This used to zoom out of the row that
+            // started it, and a zoom destination can be dismissed by dragging
+            // down *anywhere* on it — on a board people tap all over, that is
+            // a gesture made by accident. Players were thrown back to the menu
+            // mid-game, could not get back into the game they had left, and
+            // tapping its row flipped between the old time and the current
+            // one; every row also shared one transition source id, which the
+            // zoom does not support. A push leaves only the edge swipe, which
+            // nobody makes by accident.
             if let session {
                 GameScreen(session: session) { endGame() }
-                    // The board grows out of the row that started it. A push
-                    // would slide a full-screen grid in from the side; this says
-                    // "that thing you tapped became this", which is what
-                    // actually happened.
-                    .navigationTransition(.zoom(sourceID: Route.game, in: transition))
             }
         }
     }
@@ -196,7 +197,6 @@ struct RootView: View {
                         }
                         .buttonStyle(.plain)
                         .accessibilityIdentifier("resume.\(index)")
-                        .matchedTransitionSource(id: Route.game, in: transition)
                     }
                     .onDelete(perform: delete)
                 }
@@ -221,10 +221,6 @@ struct RootView: View {
                     }
                     .buttonStyle(.plain)
                     .accessibilityIdentifier("difficulty.\(difficulty.rawValue)")
-                    // Every row that can open a board is a source for the same
-                    // zoom. Only the one actually tapped is on screen when the
-                    // transition runs, so they cannot compete.
-                    .matchedTransitionSource(id: Route.game, in: transition)
                 }
             } header: {
                 Text("New game")

@@ -92,6 +92,18 @@ struct TechniqueSolver {
     /// Candidates for one cell, for the hint engine and auto-pencil.
     func candidateMask(at index: Int) -> UInt16 { candidates[index] }
 
+    /// Narrows every empty cell to what `known` still allows.
+    ///
+    /// How the player's notes get in: a deduction they have already made is
+    /// then already applied, so the techniques find nothing to do there and
+    /// move on to one they have not. Only ever narrows — the solver's own
+    /// table is the ceiling, so stale notes cannot widen it.
+    func restrict(to known: CandidateGrid) {
+        for index in 0..<Grid.cellCount where cells[index] == 0 {
+            candidates[index] &= known[index]
+        }
+    }
+
     /// Records the first step of a pass. Later steps in the same pass are
     /// ignored: a hint should explain one deduction, not a batch of them.
     private mutating func record(_ step: @autoclosure () -> TechniqueStep) {

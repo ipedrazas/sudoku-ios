@@ -323,18 +323,15 @@ final class GameSession {
         isPencilMode.toggle()
     }
 
-    /// Fills every empty cell's candidates from the rules.
+    /// Fills every empty cell's candidates, keeping the player's own
+    /// eliminations and applying every elimination the engine knows.
     ///
-    /// A convenience the web app does not have; it saves the tedium of marking
-    /// up a fresh grid by hand without revealing anything a player could not
-    /// work out.
+    /// A convenience the web app does not have. Marking every digit the placed
+    /// numbers allow left players crossing out digits they had already ruled
+    /// out; `AutoNotes.fill` has the rules.
     func autoFillNotes() {
-        let candidates = CandidateGrid(board)
-        mutate {
-            for index in 0..<SudokuKit.Grid.cellCount where board[index] == 0 {
-                pencil[index] = candidates[index]
-            }
-        }
+        let filled = AutoNotes.fill(board: board, notes: pencil, solution: puzzle.solution)
+        mutate { pencil = filled }
     }
 
     // MARK: - History
@@ -402,7 +399,7 @@ final class GameSession {
     /// worse off than one who jumps straight to the answer.
     @discardableResult
     func hint(at level: HintLevel, previousLevel: HintLevel? = nil) -> Hint {
-        let hint = HintEngine.hint(for: board, solution: puzzle.solution, skipping: hintsShown)
+        let hint = HintEngine.hint(for: board, solution: puzzle.solution, notes: pencil, skipping: hintsShown)
         let charged = level.cost - (previousLevel?.cost ?? 0)
         hintPoints += max(0, charged)
         if level == .reveal { hintsUsed += 1 }
@@ -424,7 +421,7 @@ final class GameSession {
     /// for a different hint is not asking for more of the same one.
     func differentHint(from current: Hint) -> Hint {
         hintsShown.formUnion(current.cells)
-        return HintEngine.hint(for: board, solution: puzzle.solution, skipping: hintsShown)
+        return HintEngine.hint(for: board, solution: puzzle.solution, notes: pencil, skipping: hintsShown)
     }
 
     /// True when there is a hint left to show that is not the one on screen.

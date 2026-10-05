@@ -67,6 +67,28 @@ public struct CandidateGrid: Equatable, Sendable {
         self.masks = masks
     }
 
+    /// The candidates the player can be held to know: the board's, narrowed by
+    /// their notes wherever those notes can be trusted.
+    ///
+    /// A cell's notes count only when it has some, and only when they still
+    /// include the solution digit. Notes that have crossed out the right answer
+    /// are a mistake, and anything deduced from them would be too — so that
+    /// cell falls back to the board's candidates and every deduction made from
+    /// this table stays true. A cell with no notes has had no thought recorded
+    /// about it, which is not the same as having every digit ruled out.
+    public init(_ grid: borrowing Grid, notes: [UInt16], solution: borrowing Grid) {
+        self.init(grid)
+        guard notes.count == Grid.cellCount else { return }
+        for index in 0..<Grid.cellCount where grid[index] == 0 && notes[index] != 0 {
+            guard notes[index] & Candidates.bit(solution[index]) != 0 else { continue }
+            masks[index] &= notes[index]
+        }
+    }
+
+    init(masks: [UInt16]) {
+        self.masks = ContiguousArray(masks)
+    }
+
     @inlinable
     public subscript(index: Int) -> UInt16 { masks[index] }
 

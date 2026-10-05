@@ -76,6 +76,7 @@
 "hint.nakedSingle.nudge" = "Hay una casilla en la que solo cabe un número.";
 "hint.nakedSingle.locate" = "Fíjate en %@: solo encaja un número.";
 "hint.nakedSingle.explain" = "Todos los números menos uno ya aparecen en la fila, la columna o el bloque de %@, así que solo queda ese.";
+"hint.nakedSingle.explainNotes" = "Tus notas descartan todos los números menos uno en %@, así que solo queda ese.";
 
 /* MARK: - Pistas: único oculto */
 
