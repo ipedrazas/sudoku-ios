@@ -27,38 +27,48 @@ rather than fill in.
 
 ## Description
 
-> Sudoku, with no account to make, no advertisement to sit through, and no
-> connection required. Ever.
->
-> Every puzzle is generated on your device and guaranteed to be solvable by
-> logic alone — never by guessing. The five difficulties are defined by the
-> technique each one needs rather than by how many digits are missing, so
-> "hard" means the same thing today as it did last week.
->
-> HINTS THAT TEACH
-> Stuck? Ask for a nudge and it names the technique in play. Ask again and it
-> shows you where to look. Only the last step gives the answer away, so a hint
-> leaves you better at Sudoku than it found you.
->
-> A PUZZLE EVERY DAY
-> Everyone gets the same daily puzzle, and solving it builds a streak. Miss a
-> day and you can still play it later — the calendar keeps every one.
->
-> MADE FOR IPHONE AND IPAD
-> A full-size board on both, with keyboard support on iPad. Add a widget to see
-> whether today's puzzle is still waiting without opening the app.
->
-> EVERYTHING ELSE
-> • Pencil marks, with optional auto-fill
-> • Undo and redo, mistake highlighting you can turn off
-> • Type in a puzzle from a newspaper, and it will tell you how hard it is
-> • Share any puzzle as a link — the link *is* the puzzle, so no server is
->   involved
-> • Statistics, achievements, and a year of your solving at a glance
-> • Full VoiceOver support, Dynamic Type, and Reduce Motion
->
-> No accounts. No advertisements. No tracking. No data collected — there is no
-> server for it to be sent to.
+ The Sudoku app whose hints make you a better player instead of solving the
+ puzzle for you.
+
+ Most hints fill in a square and leave you no wiser. Here, a hint comes in
+ three steps:
+
+ 1. It names the technique that works right now ("there's a hidden single in
+    row 4").
+ 2. It highlights the cells to look at.
+ 3. Only if you still need it does it fill in the digit.
+
+ Most of the time the first step is enough, and by the end of the puzzle you
+ know a technique you didn't know at the start.
+
+ DIFFICULTY THAT MEANS SOMETHING
+ Every puzzle is rated by the techniques it takes to solve, from naked singles
+ up to locked candidates, not by how many digits are missing. So "Hard" means
+ the same thing every day, and the hints show you exactly what the next level
+ asks of you. Every puzzle is generated on your device and can be solved by
+ logic alone, without guessing.
+
+ A PUZZLE EVERY DAY
+ Everyone gets the same daily puzzle, and solving it builds a streak. Miss a
+ day and you can still play it later — the calendar keeps every one.
+
+ MADE FOR IPHONE AND IPAD
+ A full-size board on both, with keyboard support on iPad. Add a widget to see
+ whether today's puzzle is still waiting without opening the app.
+
+ EVERYTHING ELSE
+ • Pencil marks, with optional auto-fill
+ • Undo and redo, mistake highlighting you can turn off
+ • Type in a puzzle from a newspaper, and it will tell you how hard it is
+ • Share any puzzle as a link — the link *is* the puzzle, so no server is
+   involved
+ • Statistics, achievements, and a year of your solving at a glance
+ • Full VoiceOver support, Dynamic Type, and Reduce Motion
+
+ NO ACCOUNT, NO ADS, NO CONNECTION
+ Everything runs on your device, including the daily puzzle, and it all works
+ in Airplane Mode. There are no accounts, no advertisements and no tracking,
+ and no data is collected because there is no server to send it to.
 
 ## Keywords
 
