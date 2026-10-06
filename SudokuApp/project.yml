@@ -41,7 +41,7 @@ settings:
     # the shared container degrades to "no snapshot" rather than trapping.
     DEVELOPMENT_TEAM: TQ86N6HVWY
     MARKETING_VERSION: "1.0"
-    CURRENT_PROJECT_VERSION: "1"
+    CURRENT_PROJECT_VERSION: "5"
 
 packages:
   SudokuKit:
@@ -77,6 +77,11 @@ targets:
       path: Resources/Info.plist
       properties:
         CFBundleDisplayName: Sudoku and Cake
+        # XcodeGen writes literal "1.0" / "1" into a plist it generates, which
+        # silently overrides MARKETING_VERSION and CURRENT_PROJECT_VERSION.
+        # Point both back at the build settings, here and in the widget.
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         ITSAppUsesNonExemptEncryption: false
         # Without this the App Store lists the app as English-only whatever is
         # in the bundle, and iOS decides the language from the bundle's
@@ -147,6 +152,8 @@ targets:
       path: ../SudokuWidgets/Info.plist
       properties:
         CFBundleDisplayName: Sudoku and Cake
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         CFBundleLocalizations:
           - en
           - es
