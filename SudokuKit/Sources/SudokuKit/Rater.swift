@@ -115,39 +115,4 @@ public enum Rater {
             }
         }
     }
-
-    /// The candidates left once every elimination the engine knows has been
-    /// applied, without placing anything.
-    ///
-    /// The logic half of "fill in all notes". Eliminations only: a naked or
-    /// hidden single is the player's to place, so a cell that comes down to
-    /// one candidate is left showing that one rather than being filled in.
-    /// Cheapest technique first, restarting from the top after any progress,
-    /// for the same reason `rate` does — and it terminates, because every pass
-    /// that reports progress has removed at least one candidate.
-    static func eliminations(for board: borrowing Grid, knowing known: CandidateGrid) -> CandidateGrid {
-        withUnsafeTemporaryAllocation(of: UInt8.self, capacity: Grid.cellCount) { cells in
-            board.withUnsafeCells { source in
-                _ = cells.initialize(fromContentsOf: source)
-            }
-            defer { cells.deinitialize() }
-
-            return withUnsafeTemporaryAllocation(of: UInt16.self, capacity: Grid.cellCount) { candidates in
-                candidates.initialize(repeating: 0)
-                defer { candidates.deinitialize() }
-
-                var solver = TechniqueSolver(cells: cells, candidates: candidates)
-                solver.restrict(to: known)
-
-                while !solver.isStuck {
-                    let progress =
-                        solver.lockedCandidates() || solver.nakedSubsets(2) || solver.hiddenSubsets(2)
-                        || solver.nakedSubsets(3) || solver.xWing()
-                    guard progress else { break }
-                }
-
-                return CandidateGrid(masks: (0..<Grid.cellCount).map(solver.candidateMask(at:)))
-            }
-        }
-    }
 }

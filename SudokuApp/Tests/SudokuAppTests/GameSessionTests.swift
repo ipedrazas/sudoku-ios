@@ -180,12 +180,12 @@ struct GameSessionTests {
         #expect(Candidates.digits(session.notes(at: cell)) == [4])
     }
 
-    @Test("auto-fill marks the candidates the engine's logic leaves")
+    @Test("auto-fill marks the candidates the board allows")
     func autoFillNotes() {
         let session = session()
         session.autoFillNotes()
 
-        let expected = AutoNotes.fill(board: session.board, notes: [], solution: session.puzzle.solution)
+        let expected = AutoNotes.fill(board: session.board, notes: [])
         for index in 0..<SudokuKit.Grid.cellCount {
             let cell = CellRef(index: index)
             #expect(session.notes(at: cell) == expected[index])

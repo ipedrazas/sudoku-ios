@@ -324,13 +324,13 @@ final class GameSession {
     }
 
     /// Fills every empty cell's candidates, keeping the player's own
-    /// eliminations and applying every elimination the engine knows.
+    /// eliminations.
     ///
-    /// A convenience the web app does not have. Marking every digit the placed
-    /// numbers allow left players crossing out digits they had already ruled
-    /// out; `AutoNotes.fill` has the rules.
+    /// A convenience the web app does not have; it saves the tedium of marking
+    /// up a grid by hand without revealing anything a player could not work
+    /// out. `AutoNotes.fill` has the rules.
     func autoFillNotes() {
-        let filled = AutoNotes.fill(board: board, notes: pencil, solution: puzzle.solution)
+        let filled = AutoNotes.fill(board: board, notes: pencil)
         mutate { pencil = filled }
     }
 
