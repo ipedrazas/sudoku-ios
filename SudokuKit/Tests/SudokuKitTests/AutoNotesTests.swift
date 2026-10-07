@@ -57,7 +57,7 @@ struct AutoNotesTests {
             var board = puzzle.puzzle
             // Fresh, and again halfway through.
             for _ in 0..<2 {
-                let filled = AutoNotes.fill(board: board, notes: [], solution: puzzle.solution)
+                let filled = AutoNotes.fill(board: board, notes: [])
                 let plain = CandidateGrid(board)
                 for index in 0..<Grid.cellCount {
                     guard board[index] == 0 else {
@@ -74,13 +74,15 @@ struct AutoNotesTests {
         }
     }
 
-    @Test("filling applies the eliminations the engine can see")
-    func fillAppliesLogic() throws {
-        let position = try #require(positionWithElimination())
-        let (puzzle, board, step) = (position.puzzle, position.board, position.step)
-        let filled = AutoNotes.fill(board: board, notes: [], solution: puzzle.solution)
-        for (cell, mask) in removals(of: step) {
-            #expect(filled[cell.index] & mask == 0, "\(step) should already be applied to \(cell)")
+    @Test("filling deduces nothing: it gives away no answers", arguments: Difficulty.allCases)
+    func fillDeducesNothing(difficulty: Difficulty) {
+        for seed in UInt64(1)...5 {
+            let puzzle = generated(difficulty, seed: seed)
+            let board = puzzle.puzzle
+            let filled = AutoNotes.fill(board: board, notes: [])
+            #expect(filled == notes(CandidateGrid(board)))
+            let solved = board.emptyCells.filter { Candidates.count(filled[$0.index]) == 1 }
+            #expect(solved.count < board.emptyCells.count / 2, "fill revealed \(solved.count) answers")
         }
     }
 
@@ -96,12 +98,12 @@ struct AutoNotesTests {
         var mine = [UInt16](repeating: 0, count: Grid.cellCount)
         mine[cell.index] = solution | Candidates.bit(other)
 
-        let filled = AutoNotes.fill(board: board, notes: mine, solution: puzzle.solution)
+        let filled = AutoNotes.fill(board: board, notes: mine)
         #expect(filled[cell.index] & ~mine[cell.index] == 0, "a crossed-out digit came back")
         #expect(filled[cell.index] & solution != 0)
     }
 
-    @Test("notes that lost the answer are kept but not reasoned from")
+    @Test("notes that lost the answer are kept and change nothing else")
     func fillDoesNotReasonFromWrongNotes() throws {
         let puzzle = generated(.medium, seed: 4)
         let board = puzzle.puzzle
@@ -110,27 +112,12 @@ struct AutoNotesTests {
         var wrong = [UInt16](repeating: 0, count: Grid.cellCount)
         wrong[cell.index] = plain[cell] & ~Candidates.bit(puzzle.solution[cell])
 
-        let filled = AutoNotes.fill(board: board, notes: wrong, solution: puzzle.solution)
-        let clean = AutoNotes.fill(board: board, notes: [], solution: puzzle.solution)
+        let filled = AutoNotes.fill(board: board, notes: wrong)
+        let clean = AutoNotes.fill(board: board, notes: [])
         for index in 0..<Grid.cellCount where index != cell.index {
             #expect(filled[index] == clean[index], "a wrong note in \(cell) changed \(CellRef(index: index))")
         }
         #expect(filled[cell.index] != 0)
-    }
-
-    @Test("a board with a wrong digit is only cleaned, not deduced from")
-    func fillSkipsLogicOnMistake() throws {
-        let position = try #require(positionWithElimination())
-        let (puzzle, board) = (position.puzzle, position.board)
-        var wrong = board
-        let cell = try #require(board.emptyCells.first)
-        let plain = CandidateGrid(board)
-        let bad = Candidates.lowest(plain[cell] & ~Candidates.bit(puzzle.solution[cell]))
-        try #require(bad != 0)
-        wrong[cell] = bad
-
-        let filled = AutoNotes.fill(board: wrong, notes: [], solution: puzzle.solution)
-        #expect(filled == notes(CandidateGrid(wrong)))
     }
 
     // MARK: - Hints
